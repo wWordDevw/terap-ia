@@ -13,8 +13,9 @@ services:
       POSTGRES_HOST_AUTH_METHOD: trust
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "${DB_PORT:-5432}:5432"
+    # Puerto no expuesto externamente - solo comunicación interna entre contenedores
+    # ports:
+    #   - "${DB_PORT:-5432}:5432"
     networks:
       - terapia-network
     healthcheck:
