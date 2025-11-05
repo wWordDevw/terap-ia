@@ -53,4 +53,4 @@ README.md
 .prettierrc
 .eslintrc.js
 .eslintrc.json
-tsconfig.json
+# tsconfig.json - NECESARIO para resolver path aliases (@/...)
