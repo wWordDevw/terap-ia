@@ -7,8 +7,10 @@ import Input from '@/components/ui/input';
 import Button from '@/components/ui/button';
 import { useAuth } from '@/contexts/auth-context';
 
-// Forzar renderizado dinámico para evitar error en build con useAuth
+// Configuración para deshabilitar pre-renderizado estático
 export const dynamic = 'force-dynamic';
+export const dynamicParams = true;
+export const revalidate = 0;
 
 export default function ForgotPasswordPage() {
   const { forgotPassword } = useAuth();

@@ -10,8 +10,10 @@ import { useAuth } from '@/contexts/auth-context';
 import { useNotifications } from '@/contexts/notification-context';
 import { UserRole } from '@/lib/api';
 
-// Forzar renderizado dinámico para evitar error en build con useAuth
+// Configuración para deshabilitar pre-renderizado estático
 export const dynamic = 'force-dynamic';
+export const dynamicParams = true;
+export const revalidate = 0;
 
 export default function RegisterPage() {
   const router = useRouter();
