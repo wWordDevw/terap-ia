@@ -48,7 +48,7 @@ services:
     volumes:
       - backend_documents:/app/generated-documents
     ports:
-      - "${BACKEND_PORT:-3000}:3000"
+      - "${BACKEND_PORT:-3100}:3000"
     networks:
       - terapia-network
     healthcheck:
