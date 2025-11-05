@@ -3,19 +3,39 @@ FROM node:20-slim AS deps
 
 WORKDIR /app
 
+# Instalar dependencias de sistema necesarias para compilar binarios nativos
+RUN apt-get update && apt-get install -y \
+    python3 \
+    make \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
+
 # Copiar archivos de dependencias
 COPY package*.json ./
 
-# Instalar dependencias
-RUN npm ci
+# Instalar dependencias con rebuild forzado de paquetes nativos
+RUN npm ci --include=optional
 
 # Stage 2: Builder
 FROM node:20-slim AS builder
 
 WORKDIR /app
 
+# Instalar dependencias de sistema necesarias para el build
+RUN apt-get update && apt-get install -y \
+    python3 \
+    make \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
+
 # Copiar dependencias desde deps
 COPY --from=deps /app/node_modules ./node_modules
+
+# Copiar package.json para rebuild
+COPY package*.json ./
+
+# Forzar reinstalación de lightningcss con binarios nativos correctos
+RUN npm rebuild lightningcss --verbose
 
 # Copiar c�digo fuente
 COPY . .
