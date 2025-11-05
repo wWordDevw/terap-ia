@@ -1,9 +1,5 @@
-import type { Metadata } from 'next';
-
-export const metadata: Metadata = {
-  title: 'Iniciar Sesión | Sistema de Gestión Terapéutica',
-  description: 'Accede al sistema de gestión de grupos terapéuticos PHP/IOP',
-};
+// Forzar renderizado dinámico para TODA la carpeta /login y subcarpetas
+export const dynamic = 'force-dynamic';
 
 export default function LoginLayout({
   children,
