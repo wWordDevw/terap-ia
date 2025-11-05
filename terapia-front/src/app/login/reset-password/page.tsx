@@ -8,6 +8,9 @@ import Input from '@/components/ui/input';
 import Button from '@/components/ui/button';
 import { useAuth } from '@/contexts/auth-context';
 
+// Forzar renderizado dinámico para evitar error en build con useAuth
+export const dynamic = 'force-dynamic';
+
 export default function ResetPasswordPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
