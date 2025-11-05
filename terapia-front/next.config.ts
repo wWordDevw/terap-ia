@@ -22,6 +22,7 @@ const nextConfig = {
     // Dominios permitidos para imágenes externas (si necesitas cargar imágenes de URLs externas)
     domains: [
       'localhost',
+      'terap-ia.victalejo.dev',
       // Añade aquí otros dominios si necesitas cargar imágenes externas
     ],
     
