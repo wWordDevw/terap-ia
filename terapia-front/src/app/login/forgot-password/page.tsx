@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import Link from 'next/link';
 import { Mail, Heart, ArrowLeft, CheckCircle } from 'lucide-react';
 import Input from '@/components/ui/input';
@@ -10,7 +10,7 @@ import { useAuth } from '@/contexts/auth-context';
 // Configuración para deshabilitar pre-renderizado estático
 export const dynamic = 'force-dynamic';
 
-export default function ForgotPasswordPage() {
+function ForgotPasswordContent() {
   const { forgotPassword } = useAuth();
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
@@ -188,3 +188,17 @@ export default function ForgotPasswordPage() {
   );
 }
 
+export default function ForgotPasswordPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 flex items-center justify-center p-4">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Cargando...</p>
+        </div>
+      </div>
+    }>
+      <ForgotPasswordContent />
+    </Suspense>
+  );
+}
