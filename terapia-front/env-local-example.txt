@@ -1,0 +1,6 @@
+# Configuración de la API del backend
+NEXT_PUBLIC_API_URL=http://localhost:3000/api/v1
+
+# Configuración de la aplicación
+NEXT_PUBLIC_APP_NAME=Sistema de Gestión Terapéutica
+NEXT_PUBLIC_APP_VERSION=1.0.0

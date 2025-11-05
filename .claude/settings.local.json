@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(if [ -f \"V:\\WORDEV\\terap-ia\\terapia-front\\Dockerfile\" ])",
+      "Bash(then echo \"exists\")",
+      "Bash(else echo \"not exists\")",
+      "Bash(fi)",
+      "Bash(if [ -f \"V:\\WORDEV\\terap-ia\\terapia-front\\.dockerignore\" ])",
+      "Bash(git init:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

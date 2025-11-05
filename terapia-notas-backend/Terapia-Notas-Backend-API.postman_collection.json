@@ -1,0 +1,2493 @@
+{
+	"info": {
+		"_postman_id": "terapia-notas-backend-api",
+		"name": "Terapia Notas Backend API",
+		"description": "Colección completa de endpoints para el sistema de gestión de grupos terapéuticos PHP/IOP",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "terapia-notas-system"
+	},
+	"item": [
+		{
+			"name": "🔐 Authentication",
+			"item": [
+				{
+					"name": "Login",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"admin@terapia.com\",\n  \"password\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/auth/login",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "auth", "login"]
+						},
+						"description": "Autentica un usuario con email y contraseña, retorna tokens JWT"
+					},
+					"response": []
+				},
+				{
+					"name": "Register",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"nuevo@terapia.com\",\n  \"password\": \"password123\",\n  \"firstName\": \"Nuevo\",\n  \"lastName\": \"Usuario\",\n  \"role\": \"THERAPIST\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/auth/register",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "auth", "register"]
+						},
+						"description": "Registra un nuevo usuario en el sistema"
+					},
+					"response": []
+				},
+				{
+					"name": "Refresh Token",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/auth/refresh",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "auth", "refresh"]
+						},
+						"description": "Obtiene un nuevo access token usando el refresh token"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Profile",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/auth/profile",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "auth", "profile"]
+						},
+						"description": "Obtiene el perfil del usuario autenticado"
+					},
+					"response": []
+				},
+				{
+					"name": "Logout",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/auth/logout",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "auth", "logout"]
+						},
+						"description": "Cierra la sesión del usuario (eliminar token del cliente)"
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoints de autenticación y autorización"
+		},
+		{
+			"name": "👥 Users",
+			"item": [
+				{
+					"name": "Create User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"terapeuta@terapia.com\",\n  \"password\": \"password123\",\n  \"firstName\": \"María\",\n  \"lastName\": \"González\",\n  \"role\": \"THERAPIST\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/users",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "users"]
+						},
+						"description": "Crear un nuevo usuario con hash de contraseña (Solo ADMIN)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Users",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/users?includeInactive=false",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "users"],
+							"query": [
+								{
+									"key": "includeInactive",
+									"value": "false"
+								}
+							]
+						},
+						"description": "Obtener todos los usuarios (Solo ADMIN)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get User by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/users/{{userId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "users", "{{userId}}"]
+						},
+						"description": "Obtener un usuario por ID (Solo ADMIN)"
+					},
+					"response": []
+				},
+				{
+					"name": "Update User",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"firstName\": \"María Elena\",\n  \"lastName\": \"González López\",\n  \"role\": \"THERAPIST\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/users/{{userId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "users", "{{userId}}"]
+						},
+						"description": "Actualizar un usuario (Solo ADMIN)"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete User",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/users/{{userId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "users", "{{userId}}"]
+						},
+						"description": "Desactivar un usuario (soft delete) (Solo ADMIN)"
+					},
+					"response": []
+				},
+				{
+					"name": "Change Password",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"currentPassword\": \"password123\",\n  \"newPassword\": \"newpassword456\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/users/{{userId}}/change-password",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "users", "{{userId}}", "change-password"]
+						},
+						"description": "Cambiar contraseña de un usuario"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Active Therapists",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/users/therapists",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "users", "therapists"]
+						},
+						"description": "Obtener todos los terapeutas activos (sin asociación obligatoria a clínica)"
+					},
+					"response": []
+				}
+			],
+			"description": "Gestión de usuarios del sistema"
+		},
+		{
+			"name": "🏥 Clinics",
+			"item": [
+				{
+					"name": "Get Public Clinics",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/clinics/public",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "clinics", "public"]
+						},
+						"description": "Obtener clínicas activas (público, sin autenticación)"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Clinic",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"clinicName\": \"Clínica de Salud Mental Norte\",\n  \"address\": \"Av. Principal 123\",\n  \"phone\": \"+1-555-0123\",\n  \"email\": \"info@clinicanorte.com\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/clinics",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "clinics"]
+						},
+						"description": "Crear una nueva clínica"
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Clinics",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/clinics?includeInactive=false",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "clinics"],
+							"query": [
+								{
+									"key": "includeInactive",
+									"value": "false"
+								}
+							]
+						},
+						"description": "Obtener todas las clínicas"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Clinic by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/clinics/{{clinicId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "clinics", "{{clinicId}}"]
+						},
+						"description": "Obtener una clínica por ID"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Clinic",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"clinicName\": \"Clínica de Salud Mental Norte - Actualizada\",\n  \"phone\": \"+1-555-0124\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/clinics/{{clinicId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "clinics", "{{clinicId}}"]
+						},
+						"description": "Actualizar una clínica"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Clinic",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/clinics/{{clinicId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "clinics", "{{clinicId}}"]
+						},
+						"description": "Desactivar una clínica (soft delete)"
+					},
+					"response": []
+				},
+				{
+					"name": "Activate Clinic",
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/clinics/{{clinicId}}/activate",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "clinics", "{{clinicId}}", "activate"]
+						},
+						"description": "Activar una clínica desactivada"
+					},
+					"response": []
+				}
+			],
+			"description": "Gestión de clínicas"
+		},
+		{
+			"name": "👤 Patients",
+			"item": [
+				{
+					"name": "Create Patient",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"firstName\": \"Juan\",\n  \"lastName\": \"Pérez\",\n  \"dateOfBirth\": \"1990-05-15\",\n  \"gender\": \"MALE\",\n  \"phone\": \"+1-555-0123\",\n  \"email\": \"juan.perez@email.com\",\n  \"address\": \"Calle Principal 123\",\n  \"emergencyContact\": \"María Pérez\",\n  \"emergencyPhone\": \"+1-555-0124\",\n  \"clinicId\": \"{{clinicId}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/patients",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "patients"]
+						},
+						"description": "Crear un nuevo paciente"
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Patients",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/patients?includeInactive=false",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "patients"],
+							"query": [
+								{
+									"key": "includeInactive",
+									"value": "false"
+								}
+							]
+						},
+						"description": "Obtener todos los pacientes"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Active Patients",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/patients/active",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "patients", "active"]
+						},
+						"description": "Obtener solo pacientes activos (sin discharge)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Patient by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/patients/{{patientId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "patients", "{{patientId}}"]
+						},
+						"description": "Obtener un paciente por ID"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Patient by Number",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/patients/number/{{patientNumber}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "patients", "number", "{{patientNumber}}"]
+						},
+						"description": "Obtener paciente por número"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Patient",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"firstName\": \"Juan Carlos\",\n  \"phone\": \"+1-555-0125\",\n  \"address\": \"Calle Nueva 456\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/patients/{{patientId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "patients", "{{patientId}}"]
+						},
+						"description": "Actualizar un paciente"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Patient",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/patients/{{patientId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "patients", "{{patientId}}"]
+						},
+						"description": "Desactivar un paciente (soft delete)"
+					},
+					"response": []
+				},
+				{
+					"name": "Discharge Patient",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"dischargeDate\": \"2024-01-15T00:00:00.000Z\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/patients/{{patientId}}/discharge",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "patients", "{{patientId}}", "discharge"]
+						},
+						"description": "Marcar discharge de un paciente"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Patient Goal",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"goalText\": \"Mejorar habilidades de comunicación interpersonal\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/patients/{{patientId}}/goals/1",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "patients", "{{patientId}}", "goals", "1"]
+						},
+						"description": "Actualizar un goal específico del paciente"
+					},
+					"response": []
+				},
+				{
+					"name": "Add Patient Diagnosis",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"icd10Code\": \"F32.9\",\n  \"diagnosisDescription\": \"Major depressive disorder, single episode, unspecified\",\n  \"isPrimary\": true\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/patients/{{patientId}}/diagnoses",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "patients", "{{patientId}}", "diagnoses"]
+						},
+						"description": "Agregar un nuevo diagnóstico al paciente"
+					},
+					"response": []
+				},
+				{
+					"name": "Remove Patient Diagnosis",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/patients/diagnoses/{{diagnosisId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "patients", "diagnoses", "{{diagnosisId}}"]
+						},
+						"description": "Eliminar un diagnóstico del paciente"
+					},
+					"response": []
+				},
+				{
+					"name": "Upload Patient Document",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": []
+								},
+								{
+									"key": "documentType",
+									"value": "INSURANCE",
+									"type": "text"
+								},
+								{
+									"key": "description",
+									"value": "Seguro médico del paciente",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/patients/{{patientId}}/documents",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "patients", "{{patientId}}", "documents"]
+						},
+						"description": "Subir un documento del paciente con archivo"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Patient Documents",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/patients/{{patientId}}/documents",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "patients", "{{patientId}}", "documents"]
+						},
+						"description": "Obtener todos los documentos de un paciente"
+					},
+					"response": []
+				},
+				{
+					"name": "Download Patient Document",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/patients/documents/{{documentId}}/download",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "patients", "documents", "{{documentId}}", "download"]
+						},
+						"description": "Descargar un documento del paciente"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Patient Document",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/patients/documents/{{documentId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "patients", "documents", "{{documentId}}"]
+						},
+						"description": "Eliminar un documento (registro y archivo físico)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Patient Notes",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/patients/{{patientId}}/notes",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "patients", "{{patientId}}", "notes"]
+						},
+						"description": "Obtener todas las notas de un paciente"
+					},
+					"response": []
+				},
+				{
+					"name": "Add Patient Note",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"noteType\": \"PROGRESS\",\n  \"noteText\": \"El paciente mostró mejoría en su participación durante la sesión grupal\",\n  \"noteDate\": \"2024-01-15T10:00:00.000Z\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/patients/{{patientId}}/notes",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "patients", "{{patientId}}", "notes"]
+						},
+						"description": "Crear una nota para un paciente"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Patient Note",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/patients/{{patientId}}/notes/{{noteId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "patients", "{{patientId}}", "notes", "{{noteId}}"]
+						},
+						"description": "Obtener una nota específica del paciente"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Patient Note",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"noteText\": \"El paciente mostró excelente mejoría en su participación durante la sesión grupal\",\n  \"noteDate\": \"2024-01-15T10:30:00.000Z\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/patients/{{patientId}}/notes/{{noteId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "patients", "{{patientId}}", "notes", "{{noteId}}"]
+						},
+						"description": "Actualizar una nota del paciente"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Patient Note",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/patients/{{patientId}}/notes/{{noteId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "patients", "{{patientId}}", "notes", "{{noteId}}"]
+						},
+						"description": "Eliminar una nota del paciente"
+					},
+					"response": []
+				}
+			],
+			"description": "Gestión completa de pacientes, incluyendo goals, diagnósticos, documentos y notas"
+		},
+		{
+			"name": "👥 Groups",
+			"item": [
+				{
+					"name": "Create Group",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"groupName\": \"Grupo PHP Mañana\",\n  \"groupType\": \"PHP\",\n  \"shift\": \"Mañana\",\n  \"maxPatients\": 12,\n  \"clinicId\": \"{{clinicId}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/groups",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "groups"]
+						},
+						"description": "Crear un nuevo grupo"
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Groups",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/groups?includeInactive=false",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "groups"],
+							"query": [
+								{
+									"key": "includeInactive",
+									"value": "false"
+								}
+							]
+						},
+						"description": "Obtener todos los grupos"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Group by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/groups/{{groupId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "groups", "{{groupId}}"]
+						},
+						"description": "Obtener un grupo por ID"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Group",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"groupName\": \"Grupo PHP Mañana - Actualizado\",\n  \"maxPatients\": 15\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/groups/{{groupId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "groups", "{{groupId}}"]
+						},
+						"description": "Actualizar un grupo"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Group",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/groups/{{groupId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "groups", "{{groupId}}"]
+						},
+						"description": "Desactivar un grupo (soft delete)"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Group Week",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"weekNumber\": 1,\n  \"startDate\": \"2024-01-15T00:00:00.000Z\",\n  \"endDate\": \"2024-01-21T23:59:59.000Z\",\n  \"isCurrent\": true\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/groups/{{groupId}}/weeks",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "groups", "{{groupId}}", "weeks"]
+						},
+						"description": "Crear una nueva semana para el grupo"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Group Weeks",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/groups/{{groupId}}/weeks",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "groups", "{{groupId}}", "weeks"]
+						},
+						"description": "Obtener todas las semanas de un grupo"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Current Group Week",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/groups/{{groupId}}/weeks/current",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "groups", "{{groupId}}", "weeks", "current"]
+						},
+						"description": "Obtener la semana actual del grupo"
+					},
+					"response": []
+				},
+				{
+					"name": "Set Current Group Week",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/groups/weeks/{{weekId}}/set-current",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "groups", "weeks", "{{weekId}}", "set-current"]
+						},
+						"description": "Marcar una semana como actual"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Group Schedule",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"dayOfWeek\": \"monday\",\n  \"activityId\": \"{{activityId}}\",\n  \"startTime\": \"09:00\",\n  \"endTime\": \"10:30\",\n  \"units\": 1.5\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/groups/{{groupId}}/schedules",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "groups", "{{groupId}}", "schedules"]
+						},
+						"description": "Crear un horario para el grupo"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Group Schedules",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/groups/{{groupId}}/schedules",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "groups", "{{groupId}}", "schedules"]
+						},
+						"description": "Obtener todos los horarios de un grupo"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Group Schedule",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/groups/schedules/{{scheduleId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "groups", "schedules", "{{scheduleId}}"]
+						},
+						"description": "Eliminar un horario del grupo"
+					},
+					"response": []
+				},
+				{
+					"name": "Add Patient to Group",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"patientId\": \"{{patientId}}\",\n  \"enrollmentDate\": \"2024-01-15T00:00:00.000Z\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/groups/{{groupId}}/patients",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "groups", "{{groupId}}", "patients"]
+						},
+						"description": "Agregar un paciente al grupo"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Group Patients",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/groups/{{groupId}}/patients",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "groups", "{{groupId}}", "patients"]
+						},
+						"description": "Obtener todos los pacientes del grupo"
+					},
+					"response": []
+				},
+				{
+					"name": "Remove Patient from Group",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/groups/{{groupId}}/patients/{{patientId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "groups", "{{groupId}}", "patients", "{{patientId}}"]
+						},
+						"description": "Remover un paciente del grupo"
+					},
+					"response": []
+				}
+			],
+			"description": "Gestión completa de grupos, semanas, horarios y pacientes"
+		},
+		{
+			"name": "🎯 Activities",
+			"item": [
+				{
+					"name": "Create Activity",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"activityName\": \"Mindfulness Practice\",\n  \"description\": \"Práctica de mindfulness y meditación\",\n  \"defaultTime\": \"10:00\",\n  \"activityType\": \"PHP\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/activities",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "activities"]
+						},
+						"description": "Crear una nueva actividad. activityType puede ser 'PHP' o 'IOP' (opcional)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Activities",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/activities?includeInactive=false",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "activities"],
+							"query": [
+								{
+									"key": "includeInactive",
+									"value": "false"
+								}
+							]
+						},
+						"description": "Obtener todas las actividades con sus subactividades y párrafos. Query params opcionales: includeInactive (boolean), activityType ('PHP' o 'IOP')"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Activities by Type - PHP",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/activities?includeInactive=false&activityType=PHP",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "activities"],
+							"query": [
+								{
+									"key": "includeInactive",
+									"value": "false"
+								},
+								{
+									"key": "activityType",
+									"value": "PHP"
+								}
+							]
+						},
+						"description": "Obtener solo actividades de tipo PHP con sus subactividades y párrafos"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Activities by Type - IOP",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/activities?includeInactive=false&activityType=IOP",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "activities"],
+							"query": [
+								{
+									"key": "includeInactive",
+									"value": "false"
+								},
+								{
+									"key": "activityType",
+									"value": "IOP"
+								}
+							]
+						},
+						"description": "Obtener solo actividades de tipo IOP con sus subactividades y párrafos"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Basic Activities",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/activities/basic?includeInactive=false",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "activities", "basic"],
+							"query": [
+								{
+									"key": "includeInactive",
+									"value": "false"
+								}
+							]
+						},
+						"description": "Obtener solo la lista básica de actividades (sin subactividades ni párrafos). Query params opcionales: includeInactive (boolean), activityType ('PHP' o 'IOP')"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Basic Activities by Type - PHP",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/activities/basic?includeInactive=false&activityType=PHP",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "activities", "basic"],
+							"query": [
+								{
+									"key": "includeInactive",
+									"value": "false"
+								},
+								{
+									"key": "activityType",
+									"value": "PHP"
+								}
+							]
+						},
+						"description": "Obtener solo actividades básicas de tipo PHP (sin subactividades ni párrafos)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Basic Activities by Type - IOP",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/activities/basic?includeInactive=false&activityType=IOP",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "activities", "basic"],
+							"query": [
+								{
+									"key": "includeInactive",
+									"value": "false"
+								},
+								{
+									"key": "activityType",
+									"value": "IOP"
+								}
+							]
+						},
+						"description": "Obtener solo actividades básicas de tipo IOP (sin subactividades ni párrafos)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Activity by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/activities/{{activityId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "activities", "{{activityId}}"]
+						},
+						"description": "Obtener una actividad específica con todo su contenido"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Activity",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"activityName\": \"Mindfulness Practice - Updated\",\n  \"description\": \"Práctica avanzada de mindfulness y meditación\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/activities/{{activityId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "activities", "{{activityId}}"]
+						},
+						"description": "Actualizar una actividad"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Activity",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/activities/{{activityId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "activities", "{{activityId}}"]
+						},
+						"description": "Desactivar una actividad (soft delete)"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Subactivity",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"subactivityName\": \"Breathing Exercises\",\n  \"description\": \"Ejercicios de respiración profunda\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/activities/{{activityId}}/subactivities",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "activities", "{{activityId}}", "subactivities"]
+						},
+						"description": "Crear una subactividad (objetivo)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Activity Subactivities",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/activities/{{activityId}}/subactivities",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "activities", "{{activityId}}", "subactivities"]
+						},
+						"description": "Obtener todas las subactividades (objetivos) de una actividad"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Subactivity",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/activities/subactivities/{{subactivityId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "activities", "subactivities", "{{subactivityId}}"]
+						},
+						"description": "Eliminar una subactividad"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Activity Paragraph",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"subactivityId\": \"{{subactivityId}}\",\n  \"paragraphText\": \"PHP Therapist facilitated a mindfulness session focusing on breathing techniques. Clients practiced deep breathing exercises and demonstrated improved emotional regulation.\",\n  \"paragraphOrder\": 1\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/activities/{{activityId}}/paragraphs",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "activities", "{{activityId}}", "paragraphs"]
+						},
+						"description": "Crear un párrafo predefinido para una actividad"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Activity Paragraphs",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/activities/{{activityId}}/paragraphs?subactivityId={{subactivityId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "activities", "{{activityId}}", "paragraphs"],
+							"query": [
+								{
+									"key": "subactivityId",
+									"value": "{{subactivityId}}"
+								}
+							]
+						},
+						"description": "Obtener todos los párrafos de una actividad (opcional: filtrar por subactividad)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Next Paragraph",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/activities/{{activityId}}/paragraphs/next?subactivityId={{subactivityId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "activities", "{{activityId}}", "paragraphs", "next"],
+							"query": [
+								{
+									"key": "subactivityId",
+									"value": "{{subactivityId}}"
+								}
+							]
+						},
+						"description": "Obtener próximo párrafo para rotación (el menos usado)"
+					},
+					"response": []
+				},
+				{
+					"name": "Increment Paragraph Usage",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/activities/paragraphs/{{paragraphId}}/increment-usage",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "activities", "paragraphs", "{{paragraphId}}", "increment-usage"]
+						},
+						"description": "Incrementar contador de uso de un párrafo"
+					},
+					"response": []
+				},
+				{
+					"name": "Reset Paragraph Usage",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/activities/{{activityId}}/paragraphs/reset-usage",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "activities", "{{activityId}}", "paragraphs", "reset-usage"]
+						},
+						"description": "Resetear contadores de uso de párrafos"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Activity Paragraph",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/activities/paragraphs/{{paragraphId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "activities", "paragraphs", "{{paragraphId}}"]
+						},
+						"description": "Eliminar un párrafo"
+					},
+					"response": []
+				}
+			],
+			"description": "Gestión completa de actividades, subactividades (objetivos) y párrafos predefinidos"
+		},
+		{
+			"name": "📋 Attendance",
+			"item": [
+				{
+					"name": "Mark Attendance",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"patientId\": \"{{patientId}}\",\n  \"weekId\": \"{{weekId}}\",\n  \"dayOfWeek\": \"monday\",\n  \"attendanceStatus\": \"PRESENT\",\n  \"attendanceTime\": \"09:00\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/attendance",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "attendance"]
+						},
+						"description": "Marcar asistencia de un paciente"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Week Attendance",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/attendance/week/{{weekId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "attendance", "week", "{{weekId}}"]
+						},
+						"description": "Obtener toda la asistencia de una semana"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Patient Week Attendance",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/attendance/week/{{weekId}}/patient/{{patientId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "attendance", "week", "{{weekId}}", "patient", "{{patientId}}"]
+						},
+						"description": "Obtener asistencia de un paciente en una semana específica"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Attendance by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/attendance/{{attendanceId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "attendance", "{{attendanceId}}"]
+						},
+						"description": "Obtener una asistencia específica"
+					},
+					"response": []
+				},
+				{
+					"name": "Lock Attendance",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/attendance/{{attendanceId}}/lock",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "attendance", "{{attendanceId}}", "lock"]
+						},
+						"description": "Bloquear una asistencia"
+					},
+					"response": []
+				},
+				{
+					"name": "Lock Week Attendance",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/attendance/week/{{weekId}}/lock-all",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "attendance", "week", "{{weekId}}", "lock-all"]
+						},
+						"description": "Bloquear todas las asistencias de una semana"
+					},
+					"response": []
+				},
+				{
+					"name": "Justify Absence",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"attendanceId\": \"{{attendanceId}}\",\n  \"reason\": \"Medical appointment\",\n  \"description\": \"Patient had a scheduled medical appointment\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/attendance/absence/justify",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "attendance", "absence", "justify"]
+						},
+						"description": "Justificar una ausencia"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Absence Reasons",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/attendance/{{attendanceId}}/absence-reasons",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "attendance", "{{attendanceId}}", "absence-reasons"]
+						},
+						"description": "Obtener razones de ausencia de una asistencia"
+					},
+					"response": []
+				},
+				{
+					"name": "Remove Absence Reason",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/attendance/absence-reasons/{{reasonId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "attendance", "absence-reasons", "{{reasonId}}"]
+						},
+						"description": "Eliminar una razón de ausencia"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Patient Attendance Stats",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/attendance/patient/{{patientId}}/stats?startDate=2024-01-01&endDate=2024-01-31",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "attendance", "patient", "{{patientId}}", "stats"],
+							"query": [
+								{
+									"key": "startDate",
+									"value": "2024-01-01"
+								},
+								{
+									"key": "endDate",
+									"value": "2024-01-31"
+								}
+							]
+						},
+						"description": "Obtener estadísticas de asistencia de un paciente"
+					},
+					"response": []
+				}
+			],
+			"description": "Gestión de asistencia y ausencias de pacientes"
+		},
+		{
+			"name": "📝 Notes",
+			"item": [
+				{
+					"name": "Generate Group Day Note",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"groupId\": \"{{groupId}}\",\n  \"date\": \"2025-01-07\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/notes/generate-group-day",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "notes", "generate-group-day"]
+						},
+						"description": "Generar nota diaria completa para un grupo con todos los pacientes presentes y ausentes. Formato exacto del documento 0701.docx"
+					},
+					"response": []
+				},
+				{
+					"name": "Generate Group Week Notes",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"groupId\": \"{{groupId}}\",\n  \"weekId\": \"{{weekId}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/notes/generate-group-week",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "notes", "generate-group-week"]
+						},
+						"description": "Generar notas semanales para un grupo (archivo .rar con todas las notas de la semana)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Group Attendance by Date",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/attendance/group/{{groupId}}/date/2025-01-07",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "attendance", "group", "{{groupId}}", "date", "2025-01-07"]
+						},
+						"description": "Obtener asistencia de un grupo en una fecha específica con resumen y razones de ausencia"
+					},
+					"response": []
+				},
+				{
+					"name": "Generate Note (Individual)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"patientId\": \"{{patientId}}\",\n  \"scheduleId\": \"{{scheduleId}}\",\n  \"noteDate\": \"2024-01-15T10:00:00.000Z\",\n  \"customText\": \"El paciente participó activamente en la sesión de Goal Setting\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/notes/generate",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "notes", "generate"]
+						},
+						"description": "Generar una nota diaria individual para un paciente (método anterior)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Notes by Patient",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/notes/patient/{{patientId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "notes", "patient", "{{patientId}}"]
+						},
+						"description": "Obtener todas las notas de un paciente"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Note by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/notes/{{noteId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "notes", "{{noteId}}"]
+						},
+						"description": "Obtener una nota específica por ID"
+					},
+					"response": []
+				},
+				{
+					"name": "Download Note",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/notes/{{noteId}}/download",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "notes", "{{noteId}}", "download"]
+						},
+						"description": "Descargar una nota en formato Word"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Note",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/notes/{{noteId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "notes", "{{noteId}}"]
+						},
+						"description": "Eliminar una nota (solo si no está bloqueada)"
+					},
+					"response": []
+				}
+			],
+			"description": "Generación y gestión de notas diarias individuales y grupales con formato exacto del documento 0701.docx"
+		},
+		{
+			"name": "📋 MTPR",
+			"item": [
+				{
+					"name": "Generate MTPR",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"reviewDate\": \"2024-01-15T00:00:00.000Z\",\n  \"goalsProgress\": \"Patient has shown significant improvement in communication skills\",\n  \"treatmentPlanUpdates\": \"Continue with current treatment plan\",\n  \"recommendations\": \"Consider increasing session frequency\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/mtpr/generate/{{scheduleId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "mtpr", "generate", "{{scheduleId}}"]
+						},
+						"description": "Generar un MTPR para un schedule específico"
+					},
+					"response": []
+				},
+				{
+					"name": "Get MTPRs by Patient",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/mtpr/patient/{{patientId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "mtpr", "patient", "{{patientId}}"]
+						},
+						"description": "Obtener todos los MTPRs de un paciente"
+					},
+					"response": []
+				},
+				{
+					"name": "Get MTPR by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/mtpr/{{mtprId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "mtpr", "{{mtprId}}"]
+						},
+						"description": "Obtener un MTPR específico por ID"
+					},
+					"response": []
+				},
+				{
+					"name": "Download MTPR",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/mtpr/{{mtprId}}/download",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "mtpr", "{{mtprId}}", "download"]
+						},
+						"description": "Descargar un MTPR en formato Word"
+					},
+					"response": []
+				},
+				{
+					"name": "Get MTPR Schedules by Patient",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/mtpr/schedules/patient/{{patientId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "mtpr", "schedules", "patient", "{{patientId}}"]
+						},
+						"description": "Obtener todos los schedules de MTPR de un paciente"
+					},
+					"response": []
+				},
+				{
+					"name": "Get MTPR Schedule",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/mtpr/schedule/{{scheduleId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "mtpr", "schedule", "{{scheduleId}}"]
+						},
+						"description": "Obtener un schedule específico de MTPR"
+					},
+					"response": []
+				}
+			],
+			"description": "Gestión de Master Treatment Plan Review (MTPR)"
+		},
+		{
+			"name": "👥 Multidisciplinary",
+			"item": [
+				{
+					"name": "Schedule Multidisciplinary",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"patientId\": \"{{patientId}}\",\n  \"scheduledDate\": \"2024-01-20T14:00:00.000Z\",\n  \"participants\": [\"Dr. Smith\", \"Nurse Johnson\", \"Therapist Brown\"],\n  \"meetingType\": \"TREATMENT_PLAN_REVIEW\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/multidisciplinary/schedules",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "multidisciplinary", "schedules"]
+						},
+						"description": "Programar una junta multidisciplinaria"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Multidisciplinary Schedules by Patient",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/multidisciplinary/schedules/patient/{{patientId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "multidisciplinary", "schedules", "patient", "{{patientId}}"]
+						},
+						"description": "Obtener todos los schedules de un paciente"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Multidisciplinary Schedule",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/multidisciplinary/schedules/{{scheduleId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "multidisciplinary", "schedules", "{{scheduleId}}"]
+						},
+						"description": "Obtener un schedule específico"
+					},
+					"response": []
+				},
+				{
+					"name": "Generate Multidisciplinary Note",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"meetingDate\": \"2024-01-20T14:00:00.000Z\",\n  \"participants\": [\"Dr. Smith\", \"Nurse Johnson\", \"Therapist Brown\"],\n  \"discussionPoints\": \"Patient progress review and treatment plan updates\",\n  \"decisions\": \"Continue current treatment plan with minor adjustments\",\n  \"followUpActions\": \"Schedule next review in 30 days\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/multidisciplinary/notes/generate/{{scheduleId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "multidisciplinary", "notes", "generate", "{{scheduleId}}"]
+						},
+						"description": "Generar nota de junta multidisciplinaria"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Multidisciplinary Notes by Patient",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/multidisciplinary/notes/patient/{{patientId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "multidisciplinary", "notes", "patient", "{{patientId}}"]
+						},
+						"description": "Obtener todas las notas de un paciente"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Multidisciplinary Note",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/multidisciplinary/notes/{{noteId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "multidisciplinary", "notes", "{{noteId}}"]
+						},
+						"description": "Obtener una nota específica"
+					},
+					"response": []
+				},
+				{
+					"name": "Download Multidisciplinary Note",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/multidisciplinary/notes/{{noteId}}/download",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "multidisciplinary", "notes", "{{noteId}}", "download"]
+						},
+						"description": "Descargar nota en formato Word"
+					},
+					"response": []
+				}
+			],
+			"description": "Gestión de juntas multidisciplinarias"
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:3002",
+			"type": "string"
+		},
+		{
+			"key": "accessToken",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "refreshToken",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "userId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "clinicId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "patientId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "groupId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "weekId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "scheduleId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "activityId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "subactivityId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "paragraphId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "attendanceId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "noteId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "mtprId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "documentId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "diagnosisId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "reasonId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "patientNumber",
+			"value": "",
+			"type": "string"
+		}
+	]
+}

@@ -1,0 +1,348 @@
+-- =============================================
+-- CONSULTAS COMUNES - TERAPIA NOTA
+-- PostgreSQL 16
+-- =============================================
+
+-- =============================================
+-- GESTIÓN DE GRUPOS Y PACIENTES
+-- =============================================
+
+-- 1. Obtener pacientes de un grupo en una semana específica
+-- Uso: Reemplazar $1 con week_id
+SELECT
+    p.patient_id,
+    p.patient_number,
+    CONCAT(p.first_name, ' ', p.last_name) AS patient_name,
+    p.discharge_date,
+    CASE
+        WHEN p.discharge_date IS NOT NULL AND p.discharge_date <= gw.start_date THEN 'discharged'
+        WHEN p.discharge_date IS NOT NULL AND p.discharge_date BETWEEN gw.start_date AND gw.end_date THEN 'discharging'
+        ELSE 'active'
+    END AS patient_status
+FROM group_patients gp
+JOIN patients p ON gp.patient_id = p.patient_id
+JOIN group_weeks gw ON gp.group_id = gw.group_id
+WHERE gw.week_id = $1
+  AND gp.is_active = TRUE
+ORDER BY p.last_name, p.first_name;
+
+-- 2. Obtener horario de actividades de un grupo
+-- Uso: Reemplazar $1 con group_id
+SELECT
+    gs.day_of_week,
+    a.activity_name,
+    sa.subactivity_name,
+    gs.start_time,
+    gs.end_time,
+    gs.units,
+    gs.is_nurse_session,
+    gs.note_code
+FROM group_schedules gs
+JOIN activities a ON gs.activity_id = a.activity_id
+LEFT JOIN subactivities sa ON gs.subactivity_id = sa.subactivity_id
+WHERE gs.group_id = $1
+ORDER BY
+    CASE gs.day_of_week
+        WHEN 'monday' THEN 1
+        WHEN 'tuesday' THEN 2
+        WHEN 'wednesday' THEN 3
+        WHEN 'thursday' THEN 4
+        WHEN 'friday' THEN 5
+        WHEN 'saturday' THEN 6
+        WHEN 'sunday' THEN 7
+    END,
+    gs.start_time;
+
+-- =============================================
+-- GESTIÓN DE ASISTENCIA
+-- =============================================
+
+-- 3. Obtener asistencia completa de una semana
+-- Uso: Reemplazar $1 con week_id
+SELECT
+    a.attendance_date,
+    p.patient_id,
+    p.patient_number,
+    CONCAT(p.first_name, ' ', p.last_name) AS patient_name,
+    a.status,
+    a.units_attended,
+    ar.reason_type,
+    ar.start_date AS absence_start,
+    ar.end_date AS absence_end,
+    ar.notes AS absence_notes
+FROM attendance a
+JOIN patients p ON a.patient_id = p.patient_id
+LEFT JOIN absence_reasons ar ON a.attendance_id = ar.attendance_id
+WHERE a.week_id = $1
+ORDER BY a.attendance_date, p.last_name, p.first_name;
+
+-- 4. Registrar asistencia diaria
+-- Uso: Reemplazar parámetros con valores reales
+INSERT INTO attendance (week_id, patient_id, attendance_date, status, units_attended)
+VALUES ($1, $2, $3, $4, $5)
+ON CONFLICT (week_id, patient_id, attendance_date)
+DO UPDATE SET
+    status = EXCLUDED.status,
+    units_attended = EXCLUDED.units_attended
+WHERE attendance.is_locked = FALSE;
+
+-- 5. Bloquear asistencia de una semana (después de generar notas)
+-- Uso: Reemplazar $1 con week_id, $2 con user_id
+UPDATE attendance
+SET is_locked = TRUE,
+    locked_at = CURRENT_TIMESTAMP,
+    locked_by = $2
+WHERE week_id = $1
+  AND is_locked = FALSE;
+
+-- =============================================
+-- GESTIÓN DE PÁRRAFOS Y RESPUESTAS
+-- =============================================
+
+-- 6. Verificar si una respuesta ya fue usada para un paciente
+-- Uso: Reemplazar $1 con patient_id, $2 con response_text
+SELECT COUNT(*) AS response_exists
+FROM generated_responses_history
+WHERE patient_id = $1
+  AND response_hash = encode(digest($2, 'sha256'), 'hex');
+
+-- 7. Obtener próximo párrafo no usado para una actividad
+-- Uso: Reemplazar $1 con activity_id, $2 con subactivity_id, $3 con group_id
+SELECT
+    ap.paragraph_id,
+    ap.paragraph_text
+FROM activity_paragraphs ap
+WHERE ap.activity_id = $1
+  AND ($2 IS NULL OR ap.subactivity_id = $2)
+  AND ap.is_active = TRUE
+  AND ap.paragraph_id NOT IN (
+      SELECT puh.paragraph_id
+      FROM paragraph_usage_history puh
+      WHERE puh.group_id = $3
+  )
+ORDER BY ap.usage_count ASC, ap.paragraph_order ASC
+LIMIT 1;
+
+-- 8. Registrar uso de párrafo
+-- Uso: Reemplazar parámetros con valores reales
+INSERT INTO paragraph_usage_history (paragraph_id, group_id, week_id, patient_id, used_date)
+VALUES ($1, $2, $3, $4, $5);
+
+-- Actualizar contador de uso
+UPDATE activity_paragraphs
+SET usage_count = usage_count + 1
+WHERE paragraph_id = $1;
+
+-- 9. Registrar respuesta generada para evitar repetición
+-- Uso: Reemplazar parámetros con valores reales
+INSERT INTO generated_responses_history (
+    patient_id,
+    response_text,
+    response_hash,
+    activity_id,
+    goal_number,
+    used_date
+)
+VALUES (
+    $1,
+    $2,
+    encode(digest($2, 'sha256'), 'hex'),
+    $3,
+    $4,
+    $5
+);
+
+-- =============================================
+-- GESTIÓN DE MTPR Y MULTIDISCIPLINARIO
+-- =============================================
+
+-- 10. Obtener próximo MTPR de un paciente
+-- Uso: Reemplazar $1 con patient_id
+SELECT
+    mtpr_schedule_id,
+    review_number,
+    scheduled_date,
+    is_completed
+FROM mtpr_schedules
+WHERE patient_id = $1
+  AND is_completed = FALSE
+ORDER BY scheduled_date ASC
+LIMIT 1;
+
+-- 11. Obtener información completa para generar MTPR
+-- Uso: Reemplazar $1 con mtpr_schedule_id
+SELECT
+    ms.mtpr_schedule_id,
+    ms.review_number,
+    ms.scheduled_date,
+    p.patient_id,
+    p.patient_number,
+    p.first_name,
+    p.last_name,
+    p.date_of_birth,
+    p.admission_date,
+    c.clinic_name,
+    c.logo_url,
+    -- Diagnóstico principal
+    (SELECT pd.icd10_code
+     FROM patient_diagnoses pd
+     WHERE pd.patient_id = p.patient_id AND pd.is_primary = TRUE
+     LIMIT 1) AS primary_diagnosis,
+    -- Todos los diagnósticos
+    (SELECT jsonb_agg(
+        jsonb_build_object(
+            'icd10_code', pd.icd10_code,
+            'description', pd.diagnosis_description,
+            'is_primary', pd.is_primary
+        )
+     )
+     FROM patient_diagnoses pd
+     WHERE pd.patient_id = p.patient_id) AS all_diagnoses,
+    -- Goals
+    (SELECT jsonb_agg(
+        jsonb_build_object(
+            'goal_number', pg.goal_number,
+            'goal_text', pg.goal_text
+        ) ORDER BY pg.goal_number
+     )
+     FROM patient_goals pg
+     WHERE pg.patient_id = p.patient_id) AS goals,
+    -- Firmas
+    (SELECT jsonb_agg(
+        jsonb_build_object(
+            'signature_type', s.signature_type,
+            'signer_name', s.signer_name,
+            'signature_image_path', s.signature_image_path
+        )
+     )
+     FROM signatures s
+     WHERE s.patient_id = p.patient_id) AS signatures
+FROM mtpr_schedules ms
+JOIN patients p ON ms.patient_id = p.patient_id
+JOIN clinics c ON p.clinic_id = c.clinic_id
+WHERE ms.mtpr_schedule_id = $1;
+
+-- 12. Obtener progreso para MTPR según número de revisión
+-- RF-022: Progresión de Progress en MTPR
+SELECT
+    review_number,
+    CASE
+        WHEN review_number = 1 THEN 'no_progress'
+        WHEN review_number = 2 THEN 'minimal_last'
+        WHEN review_number = 3 THEN 'minimal_last_two'
+        WHEN review_number = 4 THEN 'moderate_last_minimal_second'
+        WHEN review_number >= 5 THEN 'moderate_last_two'
+    END AS progress_pattern
+FROM mtpr_schedules
+WHERE mtpr_schedule_id = $1;
+
+-- 13. Marcar MTPR como completado
+-- Uso: Reemplazar $1 con mtpr_schedule_id, $2 con user_id
+UPDATE mtpr_schedules
+SET is_completed = TRUE,
+    completed_at = CURRENT_TIMESTAMP,
+    generated_by = $2
+WHERE mtpr_schedule_id = $1;
+
+-- 14. Calcular siguiente fecha de MTPR
+-- Uso: Reemplazar $1 con patient_id, $2 con current_review_number
+SELECT
+    DATE_PART('day', scheduled_date - LAG(scheduled_date) OVER (ORDER BY review_number))::INTEGER AS days_between
+FROM mtpr_schedules
+WHERE patient_id = $1
+  AND review_number <= $2
+ORDER BY review_number DESC
+LIMIT 1;
+
+-- =============================================
+-- REPORTES Y ESTADÍSTICAS
+-- =============================================
+
+-- 15. Resumen de asistencia por paciente en un período
+-- Uso: Reemplazar $1 con patient_id, $2 y $3 con fechas
+SELECT
+    p.patient_id,
+    CONCAT(p.first_name, ' ', p.last_name) AS patient_name,
+    COUNT(CASE WHEN a.status = 'P' THEN 1 END) AS days_present,
+    COUNT(CASE WHEN a.status = 'A' THEN 1 END) AS days_absent,
+    COUNT(CASE WHEN a.status = 'D' THEN 1 END) AS days_discharged,
+    SUM(a.units_attended) AS total_units,
+    AVG(a.units_attended) AS avg_units_per_day
+FROM patients p
+LEFT JOIN attendance a ON p.patient_id = a.patient_id
+WHERE p.patient_id = $1
+  AND a.attendance_date BETWEEN $2 AND $3
+GROUP BY p.patient_id, p.first_name, p.last_name;
+
+-- 16. Pacientes próximos a discharge
+-- Uso: Reemplazar $1 con número de días (ej: 21 para 3 semanas)
+SELECT
+    p.patient_id,
+    p.patient_number,
+    CONCAT(p.first_name, ' ', p.last_name) AS patient_name,
+    p.discharge_date,
+    p.discharge_date - CURRENT_DATE AS days_until_discharge
+FROM patients p
+WHERE p.is_active = TRUE
+  AND p.discharge_date IS NOT NULL
+  AND p.discharge_date BETWEEN CURRENT_DATE AND CURRENT_DATE + $1
+ORDER BY p.discharge_date;
+
+-- 17. Actividad de generación de notas por semana
+-- Uso: Reemplazar $1 y $2 con fechas
+SELECT
+    gw.week_id,
+    g.group_id,
+    g.program_type,
+    gw.week_number,
+    gw.start_date,
+    gw.end_date,
+    gw.notes_generated,
+    gw.notes_generated_at,
+    COUNT(DISTINCT a.patient_id) AS total_patients,
+    SUM(CASE WHEN a.status = 'P' THEN 1 ELSE 0 END) AS total_present
+FROM group_weeks gw
+JOIN groups g ON gw.group_id = g.group_id
+LEFT JOIN attendance a ON gw.week_id = a.week_id
+WHERE gw.start_date BETWEEN $1 AND $2
+GROUP BY gw.week_id, g.group_id, g.program_type, gw.week_number, gw.start_date, gw.end_date, gw.notes_generated, gw.notes_generated_at
+ORDER BY gw.start_date DESC;
+
+-- =============================================
+-- UTILIDADES
+-- =============================================
+
+-- 18. Resetear contadores de uso de párrafos para un grupo
+-- (útil al iniciar nueva temporada)
+-- Uso: Reemplazar $1 con group_id
+DELETE FROM paragraph_usage_history
+WHERE group_id = $1;
+
+UPDATE activity_paragraphs
+SET usage_count = 0
+WHERE activity_id IN (
+    SELECT DISTINCT activity_id
+    FROM group_schedules
+    WHERE group_id = $1
+);
+
+-- 19. Obtener goal del día según rotación semanal (RF-013)
+-- Lunes = goal 1, Martes = goal 2, etc.
+SELECT
+    CASE EXTRACT(DOW FROM $1::DATE)
+        WHEN 1 THEN 1 -- Lunes
+        WHEN 2 THEN 2 -- Martes
+        WHEN 3 THEN 3 -- Miércoles
+        WHEN 4 THEN 4 -- Jueves
+        WHEN 5 THEN 1 -- Viernes (vuelve a goal 1)
+        WHEN 6 THEN 2 -- Sábado
+        ELSE 1
+    END AS goal_of_day;
+
+-- 20. Verificar si un día es hábil para MTPR (lunes a sábado)
+-- RF-041
+SELECT
+    CASE
+        WHEN EXTRACT(DOW FROM $1::DATE) = 0 THEN FALSE -- Domingo
+        ELSE TRUE
+    END AS is_workday;

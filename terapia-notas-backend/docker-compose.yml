@@ -1,0 +1,79 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: terapia-nota-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: terapia_nota_db
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # NestJS Application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: terapia-nota-app
+    restart: unless-stopped
+    ports:
+      - "3002:3000"
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      DB_DATABASE: terapia_nota_db
+      PORT: 3000
+      NODE_ENV: development
+      JWT_SECRET: your-secret-key-change-this-in-production
+      JWT_EXPIRES_IN: 24h
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-your-gemini-api-key-here}
+      GEMINI_MODEL: gemini-1.5-flash
+      # Mantener OPENAI_API_KEY para compatibilidad hacia atrás
+      OPENAI_API_KEY: ${GEMINI_API_KEY:-your-gemini-api-key-here}
+      PHP_SIMPLE_TEMPLATE_PATH: PHP_CLEAN_TEMPLATE_SIMPLE.docx
+      IOP_SIMPLE_TEMPLATE_PATH: IOP_CLEAN_TEMPLATE_SIMPLE.docx
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./src:/app/src
+      - ./node_modules:/app/node_modules
+      - ./PHP_CLEAN_TEMPLATE_SIMPLE.docx:/app/PHP_CLEAN_TEMPLATE_SIMPLE.docx:ro
+      - ./IOP_CLEAN_TEMPLATE_SIMPLE.docx:/app/IOP_CLEAN_TEMPLATE_SIMPLE.docx:ro
+      - ./PHP_CLEAN_TEMPLATE_SIMPLE AUSENCIA.docx:/app/PHP_CLEAN_TEMPLATE_SIMPLE AUSENCIA.docx:ro
+      - ./IOP_CLEAN_TEMPLATE_SIMPLE AUSENCIA.docx:/app/IOP_CLEAN_TEMPLATE_SIMPLE AUSENCIA.docx:ro
+      - ./firma_example.jpg:/app/firma_example.jpg:ro
+
+  # pgAdmin (Optional - for database management)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: terapia-nota-pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    profiles:
+      - tools
+
+volumes:
+  postgres_data:
+    driver: local
