@@ -13,5 +13,5 @@ export const getDatabaseConfig = (
   entities: [__dirname + '/../**/*.entity{.ts,.js}'],
   synchronize: false, // BD gestionada por scripts SQL
   logging: configService.get<string>('NODE_ENV') === 'development',
-  ssl: configService.get<string>('NODE_ENV') === 'production' ? { rejectUnauthorized: false } : false,
+  ssl: configService.get<boolean>('DB_SSL_ENABLED', false) ? { rejectUnauthorized: false } : false,
 });
