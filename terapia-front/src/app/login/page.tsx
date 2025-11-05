@@ -7,6 +7,9 @@ import { Button } from '@/components/ui/button';
 import Input from '@/components/ui/input';
 import { useToast } from '@/components/providers/toast-provider';
 
+// Forzar renderizado dinámico para useSearchParams
+export const dynamic = 'force-dynamic';
+
 export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
