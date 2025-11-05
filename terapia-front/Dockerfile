@@ -28,14 +28,16 @@ RUN apt-get update && apt-get install -y \
     g++ \
     && rm -rf /var/lib/apt/lists/*
 
+# Copiar package.json primero
+COPY package*.json ./
+
 # Copiar dependencias desde deps
 COPY --from=deps /app/node_modules ./node_modules
 
-# Copiar package.json para rebuild
-COPY package*.json ./
-
-# Forzar reinstalación de lightningcss con binarios nativos correctos
-RUN npm rebuild lightningcss --verbose
+# Eliminar lightningcss completamente y reinstalarlo desde cero
+RUN rm -rf node_modules/lightningcss && \
+    rm -rf node_modules/@tailwindcss/oxide && \
+    npm install lightningcss --no-save --verbose
 
 # Copiar c�digo fuente
 COPY . .
