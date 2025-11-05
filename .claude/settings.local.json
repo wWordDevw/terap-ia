@@ -14,7 +14,9 @@
       "Bash(git remote remove:*)",
       "Bash(git push:*)",
       "Bash(git add:*)",
-      "Bash(docker ps:*)"
+      "Bash(docker ps:*)",
+      "Bash(test:*)",
+      "Bash(docker-compose down:*)"
     ],
     "deny": [],
     "ask": []

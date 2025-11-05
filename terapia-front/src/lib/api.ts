@@ -1,6 +1,6 @@
 // API configuration and types for backend integration
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api/v1';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3100/api/v1';
 
 // Types matching your backend DTOs
 export interface RegisterDto {
