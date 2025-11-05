@@ -12,8 +12,6 @@ import { UserRole } from '@/lib/api';
 
 // Configuración para deshabilitar pre-renderizado estático
 export const dynamic = 'force-dynamic';
-export const dynamicParams = true;
-export const revalidate = 0;
 
 export default function RegisterPage() {
   const router = useRouter();

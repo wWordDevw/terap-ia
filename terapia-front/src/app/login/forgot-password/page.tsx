@@ -9,8 +9,6 @@ import { useAuth } from '@/contexts/auth-context';
 
 // Configuración para deshabilitar pre-renderizado estático
 export const dynamic = 'force-dynamic';
-export const dynamicParams = true;
-export const revalidate = 0;
 
 export default function ForgotPasswordPage() {
   const { forgotPassword } = useAuth();
