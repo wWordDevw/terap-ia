@@ -1,5 +1,5 @@
 # Stage 1: Dependencies
-FROM node:20-alpine AS deps
+FROM node:20-slim AS deps
 
 WORKDIR /app
 
@@ -10,14 +10,14 @@ COPY package*.json ./
 RUN npm ci
 
 # Stage 2: Builder
-FROM node:20-alpine AS builder
+FROM node:20-slim AS builder
 
 WORKDIR /app
 
 # Copiar dependencias desde deps
 COPY --from=deps /app/node_modules ./node_modules
 
-# Copiar código fuente
+# Copiar cï¿½digo fuente
 COPY . .
 
 # Variables de entorno necesarias para el build
@@ -27,12 +27,12 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
 # Stage 3: Runner (Production)
-FROM node:20-alpine AS runner
+FROM node:20-slim AS runner
 
 WORKDIR /app
 
 # Crear usuario no-root
-RUN addgroup -g 1001 -S nodejs && adduser -S nextjs -u 1001
+RUN groupadd -g 1001 nodejs && useradd -r -u 1001 -g nodejs nextjs
 
 # Variables de entorno
 ENV NODE_ENV=production
