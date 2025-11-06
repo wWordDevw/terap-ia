@@ -1,6 +1,26 @@
 // API configuration and types for backend integration
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3100/api/v1';
+// Detectar automáticamente el entorno
+const getApiBaseUrl = () => {
+  // Si hay variable de entorno definida, usarla
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL;
+  }
+
+  // En el cliente (navegador), detectar automáticamente
+  if (typeof window !== 'undefined') {
+    // Si estamos en producción (no localhost), usar ruta relativa
+    if (!window.location.hostname.includes('localhost') &&
+        !window.location.hostname.includes('127.0.0.1')) {
+      return '/api/v1';
+    }
+  }
+
+  // Fallback para desarrollo
+  return 'http://localhost:3100/api/v1';
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 // Types matching your backend DTOs
 export interface RegisterDto {

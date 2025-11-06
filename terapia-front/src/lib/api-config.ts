@@ -2,8 +2,28 @@
  * Configuracion de API
  */
 
+// Detectar automáticamente el entorno
+const getApiBaseUrl = () => {
+  // Si hay variable de entorno definida, usarla
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL;
+  }
+
+  // En el cliente (navegador), detectar automáticamente
+  if (typeof window !== 'undefined') {
+    // Si estamos en producción (no localhost), usar ruta relativa
+    if (!window.location.hostname.includes('localhost') &&
+        !window.location.hostname.includes('127.0.0.1')) {
+      return '/api/v1';
+    }
+  }
+
+  // Fallback para desarrollo
+  return 'http://localhost:3100/api/v1';
+};
+
 export const API_CONFIG = {
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3100/api/v1',
+  baseURL: getApiBaseUrl(),
   timeout: 10000,
 };
 
