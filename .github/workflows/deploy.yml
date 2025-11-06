@@ -227,8 +227,12 @@ jobs:
               echo "🚀 Iniciando servicios..."
               \$DOCKER_COMPOSE up -d
 
-              echo "⏳ Esperando 20 segundos..."
-              sleep 20
+              echo "⏳ Esperando 40 segundos para que los servicios inicien y ejecuten migraciones..."
+              sleep 40
+
+              echo "📋 Verificando logs del backend (migraciones + inicio)..."
+              echo "--- Últimas 100 líneas del log del backend ---"
+              docker logs terapia-backend --tail 100 || true
 
               echo "✅ Despliegue completado"
           ENDSSH
@@ -294,8 +298,12 @@ jobs:
               echo "🚀 Iniciando servicios..."
               \$DOCKER_COMPOSE up -d
 
-              echo "⏳ Esperando 20 segundos..."
-              sleep 20
+              echo "⏳ Esperando 40 segundos para que los servicios inicien y ejecuten migraciones..."
+              sleep 40
+
+              echo "📋 Verificando logs del backend (migraciones + inicio)..."
+              echo "--- Últimas 100 líneas del log del backend ---"
+              docker logs terapia-backend --tail 100 || true
 
               echo "✅ Despliegue completado"
           ENDSSH

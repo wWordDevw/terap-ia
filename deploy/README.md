@@ -265,9 +265,11 @@ git push origin master
 2. **Notificación Inicio** - Envía mensaje a WhatsApp indicando inicio
 3. **Backup** - Crea backup de la base de datos
 4. **Despliegue** - Actualiza código, reconstruye contenedores, reinicia servicios
-5. **Health Check** - Verifica que todos los servicios estén funcionando
-6. **Limpieza** - Elimina recursos Docker no utilizados
-7. **Notificación Final** - Envía mensaje de éxito o error
+5. **Migraciones Automáticas** - El backend ejecuta migraciones al iniciar
+6. **Verificación de Logs** - Muestra logs del backend para confirmar inicio correcto
+7. **Health Check** - Verifica que todos los servicios estén funcionando
+8. **Limpieza** - Elimina recursos Docker no utilizados
+9. **Notificación Final** - Envía mensaje de éxito o error
 
 ### Notificaciones
 
@@ -320,6 +322,69 @@ docker-compose up -d
 # Verificar estado
 docker-compose ps
 docker-compose logs -f
+```
+
+---
+
+## 🗄️ Gestión de Migraciones de Base de Datos
+
+### Migraciones Automáticas
+
+⚡ **Las migraciones se ejecutan automáticamente cuando el backend inicia.** No necesitas hacer nada manualmente.
+
+El backend tiene un entrypoint que:
+1. Espera a que PostgreSQL esté listo
+2. Crea la base de datos si no existe
+3. Ejecuta todas las migraciones (schema, views, triggers)
+4. Inicia la aplicación NestJS
+
+### Ejecutar Migraciones Manualmente (Opcional)
+
+Si necesitas ejecutar migraciones manualmente por alguna razón:
+
+```bash
+# Opción 1: Usando el script del deploy
+cd /var/www/terap-ia
+bash deploy/run-migrations.sh
+
+# Opción 2: Directamente en el contenedor
+docker exec -it terapia-postgres psql -U postgres -d terapia_db -f terapia-notas-backend/database/schema.sql
+```
+
+### Ver Estado de la Base de Datos
+
+```bash
+# Conectarse a PostgreSQL
+docker exec -it terapia-postgres psql -U postgres -d terapia_db
+
+# Listar tablas
+\dt
+
+# Ver estructura de una tabla
+\d nombre_tabla
+
+# Salir
+\q
+```
+
+### Solucionar Errores 500 de Base de Datos
+
+Si el backend devuelve errores 500, probablemente es un problema de migración:
+
+```bash
+# 1. Ver logs del backend para identificar el error
+bash deploy/view-logs.sh backend
+# Los logs mostrarán si las migraciones se ejecutaron correctamente
+
+# 2. Si las migraciones fallaron, reiniciar el backend para reintentarlas
+docker-compose restart backend
+
+# 3. Verificar logs nuevamente para ver si se solucionó
+bash deploy/view-logs.sh follow
+
+# 4. Si persiste el problema, ejecutar migraciones manualmente
+bash deploy/run-migrations.sh
+docker-compose restart backend
 ```
 
 ---
@@ -404,17 +469,18 @@ bash deploy/health-check.sh system
 ### Ver Logs
 
 ```bash
-# Logs de todos los servicios
-docker-compose logs -f
+# Usar el script view-logs.sh (recomendado)
+bash deploy/view-logs.sh backend      # Ver logs del backend
+bash deploy/view-logs.sh frontend     # Ver logs del frontend
+bash deploy/view-logs.sh postgres     # Ver logs de la base de datos
+bash deploy/view-logs.sh all          # Ver logs de todos los servicios
+bash deploy/view-logs.sh follow       # Seguir logs del backend en tiempo real
 
-# Logs del backend
-docker-compose logs -f backend
-
-# Logs del frontend
-docker-compose logs -f frontend
-
-# Logs de PostgreSQL
-docker-compose logs -f postgres
+# O usar docker-compose directamente
+docker-compose logs -f                # Todos los servicios
+docker-compose logs -f backend        # Solo backend
+docker-compose logs -f frontend       # Solo frontend
+docker-compose logs -f postgres       # Solo PostgreSQL
 
 # Logs de Nginx
 tail -f /var/log/nginx/terap-ia-access.log
@@ -618,6 +684,8 @@ docker-compose up -d
 | [backup-db.sh](backup-db.sh) | Gestión de backups de PostgreSQL |
 | [health-check.sh](health-check.sh) | Verificación de servicios |
 | [notify-whatsapp.sh](notify-whatsapp.sh) | Envío de notificaciones |
+| [run-migrations.sh](run-migrations.sh) | Ejecutar migraciones de base de datos |
+| [view-logs.sh](view-logs.sh) | Ver logs de los servicios |
 
 ---
 
