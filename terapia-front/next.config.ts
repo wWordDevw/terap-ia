@@ -23,6 +23,7 @@ const nextConfig = {
     domains: [
       'localhost',
       'terap-ia.victalejo.dev',
+      '147.93.184.62',
       // Añade aquí otros dominios si necesitas cargar imágenes externas
     ],
     

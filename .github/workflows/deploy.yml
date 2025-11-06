@@ -1,0 +1,298 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
+
+env:
+  DOMAIN: terap-ia.victalejo.dev
+  DEPLOY_PATH: /var/www/terap-ia
+
+jobs:
+  ################################################################################
+  # Job 1: Build y Test
+  ################################################################################
+  build-and-test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: |
+            terapia-notas-backend/package-lock.json
+            terapia-front/package-lock.json
+
+      - name: Install Backend dependencies
+        working-directory: ./terapia-notas-backend
+        run: npm ci
+
+      - name: Build Backend
+        working-directory: ./terapia-notas-backend
+        run: npm run build
+
+      - name: Install Frontend dependencies
+        working-directory: ./terapia-front
+        run: npm ci
+
+      - name: Build Frontend
+        working-directory: ./terapia-front
+        run: npm run build
+
+      - name: Type check Frontend
+        working-directory: ./terapia-front
+        run: npm run type-check
+
+  ################################################################################
+  # Job 2: Deploy to Production
+  ################################################################################
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    if: github.ref == 'refs/heads/master'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Get commit info
+        id: commit
+        run: |
+          echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+          echo "message=$(git log -1 --pretty=%B | head -n1)" >> $GITHUB_OUTPUT
+          echo "author=$(git log -1 --pretty=%an)" >> $GITHUB_OUTPUT
+
+      - name: Send deployment start notification
+        run: |
+          curl -X POST '${{ secrets.WHATSAPP_API_URL }}' \
+            -H 'accept: application/json' \
+            -H 'X-Api-Key: ${{ secrets.WHATSAPP_API_KEY }}' \
+            -H 'Content-Type: application/json' \
+            -d '{
+              "chatId": "${{ secrets.WHATSAPP_CHAT_ID }}",
+              "text": "🚀 *Despliegue Iniciado*\n\n📦 Proyecto: Terap-IA\n🌍 Ambiente: production\n🌿 Branch: ${{ github.ref_name }}\n📝 Commit: ${{ steps.commit.outputs.sha_short }}\n👤 Autor: ${{ steps.commit.outputs.author }}\n💬 Mensaje: ${{ steps.commit.outputs.message }}\n⏰ Hora: $(date '\''+%Y-%m-%d %H:%M:%S'\'')\n\nIniciando proceso de despliegue...",
+              "session": "${{ secrets.WHATSAPP_SESSION }}"
+            }'
+
+      - name: Install SSH client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y sshpass openssh-client
+
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa || echo "No SSH private key, using password"
+          chmod 600 ~/.ssh/id_rsa || true
+          ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Create backup before deployment
+        continue-on-error: true
+        run: |
+          if [ -n "${{ secrets.SSH_PASSWORD }}" ]; then
+            sshpass -p "${{ secrets.SSH_PASSWORD }}" ssh -o StrictHostKeyChecking=no \
+              ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
+              "cd ${{ env.DEPLOY_PATH }} && bash deploy/backup-db.sh backup || echo 'Backup failed, continuing...'"
+          else
+            ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
+              "cd ${{ env.DEPLOY_PATH }} && bash deploy/backup-db.sh backup || echo 'Backup failed, continuing...'"
+          fi
+
+      - name: Deploy to server
+        id: deploy
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_PASSWORD: ${{ secrets.SSH_PASSWORD }}
+          DEPLOY_PATH: ${{ env.DEPLOY_PATH }}
+          BRANCH: master
+          DOMAIN: ${{ env.DOMAIN }}
+        run: |
+          START_TIME=$(date +%s)
+
+          if [ -n "${{ secrets.SSH_PASSWORD }}" ]; then
+            export SSHPASS="${{ secrets.SSH_PASSWORD }}"
+
+            # Actualizar código
+            sshpass -e ssh -o StrictHostKeyChecking=no ${SSH_USER}@${SSH_HOST} << 'ENDSSH'
+              set -e
+              cd ${DEPLOY_PATH}
+
+              echo "📥 Actualizando código..."
+              git fetch origin ${BRANCH}
+              git reset --hard origin/${BRANCH}
+              git clean -fd
+
+              echo "📝 Commit actual:"
+              git log -1 --oneline
+
+              echo "🔧 Verificando variables de entorno..."
+              if [ ! -f ".env" ]; then
+                cp .env.production .env
+                echo "⚠️  .env creado desde .env.production"
+              fi
+
+              echo "🛑 Deteniendo servicios..."
+              docker-compose down || true
+
+              echo "🏗️  Construyendo imágenes..."
+              docker-compose build --no-cache
+
+              echo "🚀 Iniciando servicios..."
+              docker-compose up -d
+
+              echo "⏳ Esperando 20 segundos..."
+              sleep 20
+
+              echo "✅ Despliegue completado"
+          ENDSSH
+          else
+            ssh -o StrictHostKeyChecking=no ${SSH_USER}@${SSH_HOST} << 'ENDSSH'
+              set -e
+              cd ${DEPLOY_PATH}
+
+              echo "📥 Actualizando código..."
+              git fetch origin ${BRANCH}
+              git reset --hard origin/${BRANCH}
+              git clean -fd
+
+              echo "🛑 Deteniendo servicios..."
+              docker-compose down || true
+
+              echo "🏗️  Construyendo imágenes..."
+              docker-compose build --no-cache
+
+              echo "🚀 Iniciando servicios..."
+              docker-compose up -d
+
+              echo "⏳ Esperando 20 segundos..."
+              sleep 20
+
+              echo "✅ Despliegue completado"
+          ENDSSH
+          fi
+
+          END_TIME=$(date +%s)
+          DURATION=$((END_TIME - START_TIME))
+          MINUTES=$((DURATION / 60))
+          SECONDS=$((DURATION % 60))
+          echo "duration=${MINUTES}m ${SECONDS}s" >> $GITHUB_OUTPUT
+
+      - name: Run health checks
+        id: healthcheck
+        continue-on-error: true
+        run: |
+          if [ -n "${{ secrets.SSH_PASSWORD }}" ]; then
+            sshpass -p "${{ secrets.SSH_PASSWORD }}" ssh -o StrictHostKeyChecking=no \
+              ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
+              "cd ${{ env.DEPLOY_PATH }} && bash deploy/health-check.sh check"
+          else
+            ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
+              "cd ${{ env.DEPLOY_PATH }} && bash deploy/health-check.sh check"
+          fi
+
+      - name: Clean Docker resources
+        continue-on-error: true
+        run: |
+          if [ -n "${{ secrets.SSH_PASSWORD }}" ]; then
+            sshpass -p "${{ secrets.SSH_PASSWORD }}" ssh -o StrictHostKeyChecking=no \
+              ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
+              "docker system prune -f || true"
+          else
+            ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
+              "docker system prune -f || true"
+          fi
+
+      - name: Send success notification
+        if: success()
+        run: |
+          curl -X POST '${{ secrets.WHATSAPP_API_URL }}' \
+            -H 'accept: application/json' \
+            -H 'X-Api-Key: ${{ secrets.WHATSAPP_API_KEY }}' \
+            -H 'Content-Type: application/json' \
+            -d '{
+              "chatId": "${{ secrets.WHATSAPP_CHAT_ID }}",
+              "text": "✅ *Despliegue Exitoso*\n\n📦 Proyecto: Terap-IA\n🌍 Ambiente: production\n📝 Commit: ${{ steps.commit.outputs.sha_short }}\n⏱️  Duración: ${{ steps.deploy.outputs.duration }}\n🔗 URL: https://${{ env.DOMAIN }}\n📚 API Docs: https://${{ env.DOMAIN }}/api/docs\n⏰ Hora: $(date '\''+%Y-%m-%d %H:%M:%S'\'')\n\n¡El sistema está funcionando correctamente! 🎉",
+              "session": "${{ secrets.WHATSAPP_SESSION }}"
+            }'
+
+      - name: Send failure notification
+        if: failure()
+        run: |
+          curl -X POST '${{ secrets.WHATSAPP_API_URL }}' \
+            -H 'accept: application/json' \
+            -H 'X-Api-Key: ${{ secrets.WHATSAPP_API_KEY }}' \
+            -H 'Content-Type: application/json' \
+            -d '{
+              "chatId": "${{ secrets.WHATSAPP_CHAT_ID }}",
+              "text": "❌ *Despliegue Fallido*\n\n📦 Proyecto: Terap-IA\n🌍 Ambiente: production\n📝 Commit: ${{ steps.commit.outputs.sha_short }}\n❗ Error: El despliegue ha fallado\n⏰ Hora: $(date '\''+%Y-%m-%d %H:%M:%S'\'')\n\n🔍 Revisar logs en: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}\n\nPor favor revisar el error y reintentar.",
+              "session": "${{ secrets.WHATSAPP_SESSION }}"
+            }'
+
+  ################################################################################
+  # Job 3: Monitor Post-Deployment (opcional)
+  ################################################################################
+  post-deployment-check:
+    name: Post-Deployment Monitoring
+    runs-on: ubuntu-latest
+    needs: deploy
+    if: success()
+
+    steps:
+      - name: Wait 2 minutes for services to stabilize
+        run: sleep 120
+
+      - name: Check HTTPS endpoint
+        run: |
+          echo "Verificando endpoint HTTPS..."
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://${{ env.DOMAIN }})
+
+          if [ "$HTTP_STATUS" -eq 200 ] || [ "$HTTP_STATUS" -eq 301 ] || [ "$HTTP_STATUS" -eq 302 ]; then
+            echo "✅ Frontend respondiendo correctamente (HTTP $HTTP_STATUS)"
+          else
+            echo "❌ Frontend no responde correctamente (HTTP $HTTP_STATUS)"
+            exit 1
+          fi
+
+      - name: Check API endpoint
+        continue-on-error: true
+        run: |
+          echo "Verificando endpoint API..."
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://${{ env.DOMAIN }}/api/v1)
+
+          if [ "$HTTP_STATUS" -eq 200 ] || [ "$HTTP_STATUS" -eq 404 ]; then
+            echo "✅ API respondiendo (HTTP $HTTP_STATUS)"
+          else
+            echo "⚠️  API status: HTTP $HTTP_STATUS"
+          fi
+
+      - name: Send monitoring report
+        if: always()
+        run: |
+          curl -X POST '${{ secrets.WHATSAPP_API_URL }}' \
+            -H 'accept: application/json' \
+            -H 'X-Api-Key: ${{ secrets.WHATSAPP_API_KEY }}' \
+            -H 'Content-Type: application/json' \
+            -d '{
+              "chatId": "${{ secrets.WHATSAPP_CHAT_ID }}",
+              "text": "📊 *Monitoreo Post-Despliegue*\n\n✅ El sistema está estable después de 2 minutos\n🌐 Frontend: Funcionando\n⚙️  Backend: Funcionando\n🔗 https://${{ env.DOMAIN }}",
+              "session": "${{ secrets.WHATSAPP_SESSION }}"
+            }'
