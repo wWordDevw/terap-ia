@@ -57,7 +57,11 @@ jobs:
 
       - name: Install Frontend dependencies
         working-directory: ./terapia-front
-        run: npm ci --include=optional
+        run: |
+          npm ci --include=optional
+          # Instalar explícitamente los módulos nativos para Linux que faltan en package-lock.json
+          npm install --no-save lightningcss-linux-x64-gnu@1.30.1
+          npm install --no-save @tailwindcss/oxide-linux-x64-gnu@4.1.14
 
       - name: Build Frontend
         working-directory: ./terapia-front
