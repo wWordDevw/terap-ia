@@ -1,45 +1,31 @@
 # Stage 1: Dependencies
-FROM node:20-slim AS deps
+FROM node:20-alpine AS deps
 
 WORKDIR /app
 
 # Instalar dependencias de sistema necesarias para compilar binarios nativos
-RUN apt-get update && apt-get install -y \
+RUN apk add --no-cache \
     python3 \
     make \
     g++ \
-    && rm -rf /var/lib/apt/lists/*
+    libc6-compat
 
 # Copiar archivos de dependencias
 COPY package*.json ./
 
-# Instalar dependencias con rebuild forzado de paquetes nativos
-RUN npm ci --include=optional
+# Instalar dependencias con soporte completo para módulos opcionales nativos
+RUN npm ci --include=optional --verbose
 
 # Stage 2: Builder
-FROM node:20-slim AS builder
+FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Instalar dependencias de sistema necesarias para el build
-RUN apt-get update && apt-get install -y \
-    python3 \
-    make \
-    g++ \
-    && rm -rf /var/lib/apt/lists/*
-
-# Copiar package.json primero
+# Copiar dependencias ya instaladas desde deps stage
+COPY --from=deps /app/node_modules ./node_modules
 COPY package*.json ./
 
-# Copiar dependencias desde deps
-COPY --from=deps /app/node_modules ./node_modules
-
-# Eliminar lightningcss completamente y reinstalarlo desde cero
-RUN rm -rf node_modules/lightningcss && \
-    rm -rf node_modules/@tailwindcss/oxide && \
-    npm install lightningcss --no-save --verbose
-
-# Copiar c�digo fuente
+# Copiar código fuente
 COPY . .
 
 # Variables de entorno necesarias para el build
@@ -49,12 +35,12 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
 # Stage 3: Runner (Production)
-FROM node:20-slim AS runner
+FROM node:20-alpine AS runner
 
 WORKDIR /app
 
-# Crear usuario no-root
-RUN groupadd -g 1001 nodejs && useradd -r -u 1001 -g nodejs nextjs
+# Crear usuario no-root (Alpine usa addgroup y adduser)
+RUN addgroup -g 1001 -S nodejs && adduser -S nextjs -u 1001 -G nodejs
 
 # Variables de entorno
 ENV NODE_ENV=production

@@ -17,7 +17,8 @@
       "Bash(docker ps:*)",
       "Bash(test:*)",
       "Bash(docker-compose down:*)",
-      "Bash(nslookup:*)"
+      "Bash(nslookup:*)",
+      "Bash(cat:*)"
     ],
     "deny": [],
     "ask": []

@@ -57,13 +57,7 @@ jobs:
 
       - name: Install Frontend dependencies
         working-directory: ./terapia-front
-        run: npm ci
-
-      - name: Fix lightningcss native module
-        working-directory: ./terapia-front
-        run: |
-          echo "🔧 Reinstalando lightningcss para Linux..."
-          npm rebuild lightningcss --force || npm install lightningcss --force
+        run: npm ci --include=optional
 
       - name: Build Frontend
         working-directory: ./terapia-front
