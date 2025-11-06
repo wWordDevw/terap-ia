@@ -42,10 +42,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+          # Cache desactivado temporalmente para frontend debido a problemas con módulos nativos
           cache: 'npm'
-          cache-dependency-path: |
-            terapia-notas-backend/package-lock.json
-            terapia-front/package-lock.json
+          cache-dependency-path: terapia-notas-backend/package-lock.json
 
       - name: Install Backend dependencies
         working-directory: ./terapia-notas-backend
@@ -58,8 +57,13 @@ jobs:
       - name: Install Frontend dependencies
         working-directory: ./terapia-front
         run: |
-          # Usar npm install en lugar de npm ci para resolver dependencias nativas correctamente
+          # Limpiar completamente para evitar problemas con cache de módulos nativos
+          rm -rf node_modules package-lock.json
           npm install --no-audit --no-fund
+          # Verificar que los módulos nativos de Linux estén instalados
+          echo "Verificando módulos nativos..."
+          ls -la node_modules/ | grep lightningcss || true
+          find node_modules -name "*lightningcss*linux*" -o -name "*oxide*linux*" || true
 
       - name: Build Frontend
         working-directory: ./terapia-front
@@ -73,15 +77,16 @@ jobs:
         if: failure()
         continue-on-error: true
         run: |
+          TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
           curl -X POST 'https://wapi.iaportafolio.com/api/sendText' \
             -H 'accept: application/json' \
             -H 'X-Api-Key: ${{ secrets.WHATSAPP_API_KEY }}' \
             -H 'Content-Type: application/json' \
-            -d '{
-              "chatId": "${{ secrets.WHATSAPP_CHAT_ID }}",
-              "text": "❌ *Build Fallido*\n\n📦 Proyecto: Terap-IA\n🌍 Ambiente: CI/CD\n📝 Commit: ${{ steps.commit.outputs.sha_short }}\n👤 Autor: ${{ steps.commit.outputs.author }}\n❗ Error: El build ha fallado\n⏰ Hora: $(date '\''+%Y-%m-%d %H:%M:%S'\'')\n\n🔍 Revisar logs en: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
-              "session": "${{ secrets.WHATSAPP_SESSION }}"
-            }'
+            -d "{
+              \"chatId\": \"${{ secrets.WHATSAPP_CHAT_ID }}\",
+              \"text\": \"❌ *Build Fallido*\n\n📦 Proyecto: Terap-IA\n🌍 Ambiente: CI/CD\n📝 Commit: ${{ steps.commit.outputs.sha_short }}\n👤 Autor: ${{ steps.commit.outputs.author }}\n❗ Error: El build ha fallado\n⏰ Hora: ${TIMESTAMP}\n\n🔍 Revisar logs en: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}\",
+              \"session\": \"${{ secrets.WHATSAPP_SESSION }}\"
+            }"
 
   ################################################################################
   # Job 2: Deploy to Production
@@ -106,15 +111,16 @@ jobs:
       - name: Send deployment start notification
         continue-on-error: true
         run: |
+          TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
           curl -X POST 'https://wapi.iaportafolio.com/api/sendText' \
             -H 'accept: application/json' \
             -H 'X-Api-Key: ${{ secrets.WHATSAPP_API_KEY }}' \
             -H 'Content-Type: application/json' \
-            -d '{
-              "chatId": "${{ secrets.WHATSAPP_CHAT_ID }}",
-              "text": "🚀 *Despliegue Iniciado*\n\n📦 Proyecto: Terap-IA\n🌍 Ambiente: production\n🌿 Branch: ${{ github.ref_name }}\n📝 Commit: ${{ steps.commit.outputs.sha_short }}\n👤 Autor: ${{ steps.commit.outputs.author }}\n💬 Mensaje: ${{ steps.commit.outputs.message }}\n⏰ Hora: $(date '\''+%Y-%m-%d %H:%M:%S'\'')\n\nIniciando proceso de despliegue...",
-              "session": "${{ secrets.WHATSAPP_SESSION }}"
-            }'
+            -d "{
+              \"chatId\": \"${{ secrets.WHATSAPP_CHAT_ID }}\",
+              \"text\": \"🚀 *Despliegue Iniciado*\n\n📦 Proyecto: Terap-IA\n🌍 Ambiente: production\n🌿 Branch: ${{ github.ref_name }}\n📝 Commit: ${{ steps.commit.outputs.sha_short }}\n👤 Autor: ${{ steps.commit.outputs.author }}\n💬 Mensaje: ${{ steps.commit.outputs.message }}\n⏰ Hora: ${TIMESTAMP}\n\nIniciando proceso de despliegue...\",
+              \"session\": \"${{ secrets.WHATSAPP_SESSION }}\"
+            }"
 
       - name: Install SSH client
         run: |
@@ -249,29 +255,31 @@ jobs:
         if: success()
         continue-on-error: true
         run: |
+          TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
           curl -X POST 'https://wapi.iaportafolio.com/api/sendText' \
             -H 'accept: application/json' \
             -H 'X-Api-Key: ${{ secrets.WHATSAPP_API_KEY }}' \
             -H 'Content-Type: application/json' \
-            -d '{
-              "chatId": "${{ secrets.WHATSAPP_CHAT_ID }}",
-              "text": "✅ *Despliegue Exitoso*\n\n📦 Proyecto: Terap-IA\n🌍 Ambiente: production\n📝 Commit: ${{ steps.commit.outputs.sha_short }}\n⏱️  Duración: ${{ steps.deploy.outputs.duration }}\n🔗 URL: https://${{ env.DOMAIN }}\n📚 API Docs: https://${{ env.DOMAIN }}/api/docs\n⏰ Hora: $(date '\''+%Y-%m-%d %H:%M:%S'\'')\n\n¡El sistema está funcionando correctamente! 🎉",
-              "session": "${{ secrets.WHATSAPP_SESSION }}"
-            }'
+            -d "{
+              \"chatId\": \"${{ secrets.WHATSAPP_CHAT_ID }}\",
+              \"text\": \"✅ *Despliegue Exitoso*\n\n📦 Proyecto: Terap-IA\n🌍 Ambiente: production\n📝 Commit: ${{ steps.commit.outputs.sha_short }}\n⏱️  Duración: ${{ steps.deploy.outputs.duration }}\n🔗 URL: https://${{ env.DOMAIN }}\n📚 API Docs: https://${{ env.DOMAIN }}/api/docs\n⏰ Hora: ${TIMESTAMP}\n\n¡El sistema está funcionando correctamente! 🎉\",
+              \"session\": \"${{ secrets.WHATSAPP_SESSION }}\"
+            }"
 
       - name: Send failure notification
         if: failure()
         continue-on-error: true
         run: |
+          TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
           curl -X POST 'https://wapi.iaportafolio.com/api/sendText' \
             -H 'accept: application/json' \
             -H 'X-Api-Key: ${{ secrets.WHATSAPP_API_KEY }}' \
             -H 'Content-Type: application/json' \
-            -d '{
-              "chatId": "${{ secrets.WHATSAPP_CHAT_ID }}",
-              "text": "❌ *Despliegue Fallido*\n\n📦 Proyecto: Terap-IA\n🌍 Ambiente: production\n📝 Commit: ${{ steps.commit.outputs.sha_short }}\n❗ Error: El despliegue ha fallado\n⏰ Hora: $(date '\''+%Y-%m-%d %H:%M:%S'\'')\n\n🔍 Revisar logs en: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}\n\nPor favor revisar el error y reintentar.",
-              "session": "${{ secrets.WHATSAPP_SESSION }}"
-            }'
+            -d "{
+              \"chatId\": \"${{ secrets.WHATSAPP_CHAT_ID }}\",
+              \"text\": \"❌ *Despliegue Fallido*\n\n📦 Proyecto: Terap-IA\n🌍 Ambiente: production\n📝 Commit: ${{ steps.commit.outputs.sha_short }}\n❗ Error: El despliegue ha fallado\n⏰ Hora: ${TIMESTAMP}\n\n🔍 Revisar logs en: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}\n\nPor favor revisar el error y reintentar.\",
+              \"session\": \"${{ secrets.WHATSAPP_SESSION }}\"
+            }"
 
   ################################################################################
   # Job 3: Monitor Post-Deployment (opcional)
@@ -314,12 +322,13 @@ jobs:
         if: always()
         continue-on-error: true
         run: |
+          TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
           curl -X POST 'https://wapi.iaportafolio.com/api/sendText' \
             -H 'accept: application/json' \
             -H 'X-Api-Key: ${{ secrets.WHATSAPP_API_KEY }}' \
             -H 'Content-Type: application/json' \
-            -d '{
-              "chatId": "${{ secrets.WHATSAPP_CHAT_ID }}",
-              "text": "📊 *Monitoreo Post-Despliegue*\n\n✅ El sistema está estable después de 2 minutos\n🌐 Frontend: Funcionando\n⚙️  Backend: Funcionando\n🔗 https://${{ env.DOMAIN }}",
-              "session": "${{ secrets.WHATSAPP_SESSION }}"
-            }'
+            -d "{
+              \"chatId\": \"${{ secrets.WHATSAPP_CHAT_ID }}\",
+              \"text\": \"📊 *Monitoreo Post-Despliegue*\n\n✅ El sistema está estable después de 2 minutos\n🌐 Frontend: Funcionando\n⚙️  Backend: Funcionando\n🔗 https://${{ env.DOMAIN }}\n⏰ Hora: ${TIMESTAMP}\",
+              \"session\": \"${{ secrets.WHATSAPP_SESSION }}\"
+            }"
