@@ -1,14 +1,14 @@
 # Stage 1: Dependencies
-FROM node:20-alpine AS deps
+FROM node:20-slim AS deps
 
 WORKDIR /app
 
 # Instalar dependencias de sistema necesarias para compilar binarios nativos
-RUN apk add --no-cache \
+RUN apt-get update && apt-get install -y \
     python3 \
     make \
     g++ \
-    libc6-compat
+    && rm -rf /var/lib/apt/lists/*
 
 # Copiar archivos de dependencias
 COPY package*.json ./
@@ -17,7 +17,7 @@ COPY package*.json ./
 RUN npm install --no-audit --no-fund --verbose
 
 # Stage 2: Builder
-FROM node:20-alpine AS builder
+FROM node:20-slim AS builder
 
 WORKDIR /app
 
@@ -35,12 +35,12 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
 # Stage 3: Runner (Production)
-FROM node:20-alpine AS runner
+FROM node:20-slim AS runner
 
 WORKDIR /app
 
-# Crear usuario no-root (Alpine usa addgroup y adduser)
-RUN addgroup -g 1001 -S nodejs && adduser -S nextjs -u 1001 -G nodejs
+# Crear usuario no-root
+RUN groupadd -g 1001 nodejs && useradd -r -u 1001 -g nodejs nextjs
 
 # Variables de entorno
 ENV NODE_ENV=production
