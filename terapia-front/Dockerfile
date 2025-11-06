@@ -13,11 +13,8 @@ RUN apk add --no-cache \
 # Copiar archivos de dependencias
 COPY package*.json ./
 
-# Instalar dependencias con soporte completo para módulos opcionales nativos
-RUN npm ci --include=optional --verbose && \
-    # Instalar explícitamente los módulos nativos para Linux que faltan en package-lock.json
-    npm install --no-save lightningcss-linux-x64-gnu@1.30.1 && \
-    npm install --no-save @tailwindcss/oxide-linux-x64-gnu@4.1.14
+# Instalar dependencias - usar npm install para resolver dependencias nativas correctamente
+RUN npm install --no-audit --no-fund --verbose
 
 # Stage 2: Builder
 FROM node:20-alpine AS builder
