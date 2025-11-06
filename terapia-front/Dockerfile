@@ -13,8 +13,16 @@ RUN apt-get update && apt-get install -y \
 # Copiar archivos de dependencias
 COPY package*.json ./
 
-# Instalar dependencias - usar npm install para resolver dependencias nativas correctamente
+# Eliminar package-lock.json si existe para forzar resolución de módulos nativos en Linux
+RUN rm -f package-lock.json
+
+# Instalar dependencias - npm install resolverá las dependencias nativas para Linux
 RUN npm install --no-audit --no-fund --verbose
+
+# Verificar instalación de módulos nativos
+RUN echo "Verificando módulos nativos instalados:" && \
+    find node_modules -name "*lightningcss*linux*" -o -name "*oxide*linux*" | head -20 && \
+    ls -la node_modules/lightningcss-linux-x64-gnu 2>/dev/null || echo "⚠️ lightningcss-linux-x64-gnu NO encontrado"
 
 # Stage 2: Builder
 FROM node:20-slim AS builder
