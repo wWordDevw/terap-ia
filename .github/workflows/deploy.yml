@@ -31,6 +31,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Get commit info
+        id: commit
+        run: |
+          echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+          echo "message=$(git log -1 --pretty=%B | head -n1)" >> $GITHUB_OUTPUT
+          echo "author=$(git log -1 --pretty=%an)" >> $GITHUB_OUTPUT
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -52,6 +59,12 @@ jobs:
         working-directory: ./terapia-front
         run: npm ci
 
+      - name: Fix lightningcss native module
+        working-directory: ./terapia-front
+        run: |
+          echo "🔧 Reinstalando lightningcss para Linux..."
+          npm rebuild lightningcss --force || npm install lightningcss --force
+
       - name: Build Frontend
         working-directory: ./terapia-front
         run: npm run build
@@ -59,6 +72,20 @@ jobs:
       - name: Type check Frontend
         working-directory: ./terapia-front
         run: npm run type-check
+
+      - name: Send build failure notification
+        if: failure()
+        continue-on-error: true
+        run: |
+          curl -X POST 'https://wapi.iaportafolio.com/api/sendText' \
+            -H 'accept: application/json' \
+            -H 'X-Api-Key: ${{ secrets.WHATSAPP_API_KEY }}' \
+            -H 'Content-Type: application/json' \
+            -d '{
+              "chatId": "${{ secrets.WHATSAPP_CHAT_ID }}",
+              "text": "❌ *Build Fallido*\n\n📦 Proyecto: Terap-IA\n🌍 Ambiente: CI/CD\n📝 Commit: ${{ steps.commit.outputs.sha_short }}\n👤 Autor: ${{ steps.commit.outputs.author }}\n❗ Error: El build ha fallado\n⏰ Hora: $(date '\''+%Y-%m-%d %H:%M:%S'\'')\n\n🔍 Revisar logs en: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+              "session": "${{ secrets.WHATSAPP_SESSION }}"
+            }'
 
   ################################################################################
   # Job 2: Deploy to Production
@@ -81,8 +108,9 @@ jobs:
           echo "author=$(git log -1 --pretty=%an)" >> $GITHUB_OUTPUT
 
       - name: Send deployment start notification
+        continue-on-error: true
         run: |
-          curl -X POST '${{ secrets.WHATSAPP_API_URL }}' \
+          curl -X POST 'https://wapi.iaportafolio.com/api/sendText' \
             -H 'accept: application/json' \
             -H 'X-Api-Key: ${{ secrets.WHATSAPP_API_KEY }}' \
             -H 'Content-Type: application/json' \
@@ -223,8 +251,9 @@ jobs:
 
       - name: Send success notification
         if: success()
+        continue-on-error: true
         run: |
-          curl -X POST '${{ secrets.WHATSAPP_API_URL }}' \
+          curl -X POST 'https://wapi.iaportafolio.com/api/sendText' \
             -H 'accept: application/json' \
             -H 'X-Api-Key: ${{ secrets.WHATSAPP_API_KEY }}' \
             -H 'Content-Type: application/json' \
@@ -236,8 +265,9 @@ jobs:
 
       - name: Send failure notification
         if: failure()
+        continue-on-error: true
         run: |
-          curl -X POST '${{ secrets.WHATSAPP_API_URL }}' \
+          curl -X POST 'https://wapi.iaportafolio.com/api/sendText' \
             -H 'accept: application/json' \
             -H 'X-Api-Key: ${{ secrets.WHATSAPP_API_KEY }}' \
             -H 'Content-Type: application/json' \
@@ -286,8 +316,9 @@ jobs:
 
       - name: Send monitoring report
         if: always()
+        continue-on-error: true
         run: |
-          curl -X POST '${{ secrets.WHATSAPP_API_URL }}' \
+          curl -X POST 'https://wapi.iaportafolio.com/api/sendText' \
             -H 'accept: application/json' \
             -H 'X-Api-Key: ${{ secrets.WHATSAPP_API_KEY }}' \
             -H 'Content-Type: application/json' \
