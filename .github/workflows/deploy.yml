@@ -155,6 +155,7 @@ jobs:
           DEPLOY_PATH: ${{ env.DEPLOY_PATH }}
           BRANCH: master
           DOMAIN: ${{ env.DOMAIN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
           START_TIME=$(date +%s)
 
@@ -162,9 +163,23 @@ jobs:
             export SSHPASS="${{ secrets.SSH_PASSWORD }}"
 
             # Actualizar código
-            sshpass -e ssh -o StrictHostKeyChecking=no ${SSH_USER}@${SSH_HOST} << 'ENDSSH'
+            sshpass -e ssh -o StrictHostKeyChecking=no ${SSH_USER}@${SSH_HOST} << ENDSSH
               set -e
-              cd ${DEPLOY_PATH}
+
+              # Verificar y preparar directorio de deployment
+              if [ ! -d "${DEPLOY_PATH}" ]; then
+                echo "📁 Creando directorio ${DEPLOY_PATH}..."
+                mkdir -p ${DEPLOY_PATH}
+                cd ${DEPLOY_PATH}
+                git clone https://github.com/${GITHUB_REPOSITORY}.git .
+              else
+                cd ${DEPLOY_PATH}
+                if [ ! -d ".git" ]; then
+                  echo "📁 Inicializando repositorio git..."
+                  git init
+                  git remote add origin https://github.com/${GITHUB_REPOSITORY}.git
+                fi
+              fi
 
               echo "📥 Actualizando código..."
               git fetch origin ${BRANCH}
@@ -195,9 +210,23 @@ jobs:
               echo "✅ Despliegue completado"
           ENDSSH
           else
-            ssh -o StrictHostKeyChecking=no ${SSH_USER}@${SSH_HOST} << 'ENDSSH'
+            ssh -o StrictHostKeyChecking=no ${SSH_USER}@${SSH_HOST} << ENDSSH
               set -e
-              cd ${DEPLOY_PATH}
+
+              # Verificar y preparar directorio de deployment
+              if [ ! -d "${DEPLOY_PATH}" ]; then
+                echo "📁 Creando directorio ${DEPLOY_PATH}..."
+                mkdir -p ${DEPLOY_PATH}
+                cd ${DEPLOY_PATH}
+                git clone https://github.com/${GITHUB_REPOSITORY}.git .
+              else
+                cd ${DEPLOY_PATH}
+                if [ ! -d ".git" ]; then
+                  echo "📁 Inicializando repositorio git..."
+                  git init
+                  git remote add origin https://github.com/${GITHUB_REPOSITORY}.git
+                fi
+              fi
 
               echo "📥 Actualizando código..."
               git fetch origin ${BRANCH}
