@@ -189,6 +189,29 @@ jobs:
               echo "📝 Commit actual:"
               git log -1 --oneline
 
+              echo "🐳 Verificando Docker y Docker Compose..."
+              if ! command -v docker &> /dev/null; then
+                echo "❌ Docker no está instalado. Instalando..."
+                curl -fsSL https://get.docker.com -o get-docker.sh
+                sudo sh get-docker.sh
+                sudo usermod -aG docker \$USER
+                rm get-docker.sh
+              fi
+
+              # Verificar si existe docker compose (v2) o docker-compose (v1)
+              if docker compose version &> /dev/null; then
+                DOCKER_COMPOSE="docker compose"
+                echo "✅ Docker Compose v2 detectado"
+              elif command -v docker-compose &> /dev/null; then
+                DOCKER_COMPOSE="docker-compose"
+                echo "✅ Docker Compose v1 detectado"
+              else
+                echo "❌ Docker Compose no está instalado. Instalando v2..."
+                sudo apt-get update
+                sudo apt-get install -y docker-compose-plugin
+                DOCKER_COMPOSE="docker compose"
+              fi
+
               echo "🔧 Verificando variables de entorno..."
               if [ ! -f ".env" ]; then
                 cp .env.production .env
@@ -196,13 +219,13 @@ jobs:
               fi
 
               echo "🛑 Deteniendo servicios..."
-              docker-compose down || true
+              \$DOCKER_COMPOSE down || true
 
               echo "🏗️  Construyendo imágenes..."
-              docker-compose build --no-cache
+              \$DOCKER_COMPOSE build --no-cache
 
               echo "🚀 Iniciando servicios..."
-              docker-compose up -d
+              \$DOCKER_COMPOSE up -d
 
               echo "⏳ Esperando 20 segundos..."
               sleep 20
@@ -233,14 +256,43 @@ jobs:
               git reset --hard origin/${BRANCH}
               git clean -fd
 
+              echo "🐳 Verificando Docker y Docker Compose..."
+              if ! command -v docker &> /dev/null; then
+                echo "❌ Docker no está instalado. Instalando..."
+                curl -fsSL https://get.docker.com -o get-docker.sh
+                sudo sh get-docker.sh
+                sudo usermod -aG docker \$USER
+                rm get-docker.sh
+              fi
+
+              # Verificar si existe docker compose (v2) o docker-compose (v1)
+              if docker compose version &> /dev/null; then
+                DOCKER_COMPOSE="docker compose"
+                echo "✅ Docker Compose v2 detectado"
+              elif command -v docker-compose &> /dev/null; then
+                DOCKER_COMPOSE="docker-compose"
+                echo "✅ Docker Compose v1 detectado"
+              else
+                echo "❌ Docker Compose no está instalado. Instalando v2..."
+                sudo apt-get update
+                sudo apt-get install -y docker-compose-plugin
+                DOCKER_COMPOSE="docker compose"
+              fi
+
+              echo "🔧 Verificando variables de entorno..."
+              if [ ! -f ".env" ]; then
+                cp .env.production .env
+                echo "⚠️  .env creado desde .env.production"
+              fi
+
               echo "🛑 Deteniendo servicios..."
-              docker-compose down || true
+              \$DOCKER_COMPOSE down || true
 
               echo "🏗️  Construyendo imágenes..."
-              docker-compose build --no-cache
+              \$DOCKER_COMPOSE build --no-cache
 
               echo "🚀 Iniciando servicios..."
-              docker-compose up -d
+              \$DOCKER_COMPOSE up -d
 
               echo "⏳ Esperando 20 segundos..."
               sleep 20
