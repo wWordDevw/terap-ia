@@ -65,11 +65,14 @@ const nextConfig = {
   // Configuración para rewrites (si necesitas)
   async rewrites() {
     return [
-      // Ejemplo: rewrite para API externa
-      // {
-      //   source: '/api/external/:path*',
-      //   destination: 'https://external-api.com/:path*',
-      // },
+      // Proxy al backend - permite que el navegador llame a /api/v1/*
+      // y Next.js lo redirige al backend usando la red interna de Docker
+      {
+        source: '/api/v1/:path*',
+        destination: process.env.NODE_ENV === 'production'
+          ? 'http://backend:3000/api/v1/:path*'  // Red interna Docker en producción
+          : 'http://localhost:3100/api/v1/:path*', // localhost en desarrollo
+      },
     ];
   },
 

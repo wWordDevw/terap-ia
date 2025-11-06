@@ -100,10 +100,16 @@ En tu proyecto de Docploy, asegúrate de configurar las variables de entorno:
 
 **Para el Frontend:**
 ```env
-NEXT_PUBLIC_API_URL=https://terap-ia.victalejo.dev/api/v1
+NEXT_PUBLIC_API_URL=/api/v1
 NODE_ENV=production
 PORT=3001
 ```
+
+**Nota Importante:** Usamos `/api/v1` (ruta relativa) porque:
+- El frontend y backend están en el mismo Docker Compose
+- Next.js tiene configurado un **rewrite** que redirige `/api/v1/*` al backend
+- El rewrite usa la red interna de Docker: `http://backend:3000/api/v1/*`
+- Esto permite que el navegador llame a la misma URL del frontend pero llegue al backend
 
 **Para el Backend:**
 ```env
