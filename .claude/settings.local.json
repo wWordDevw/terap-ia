@@ -1,24 +1,7 @@
 {
   "permissions": {
     "allow": [
-      "Bash(if [ -f \"V:\\WORDEV\\terap-ia\\terapia-front\\Dockerfile\" ])",
-      "Bash(then echo \"exists\")",
-      "Bash(else echo \"not exists\")",
-      "Bash(fi)",
-      "Bash(if [ -f \"V:\\WORDEV\\terap-ia\\terapia-front\\.dockerignore\" ])",
-      "Bash(git init:*)",
-      "Bash(git commit:*)",
-      "Bash(git remote add:*)",
-      "Bash(gh --version:*)",
-      "Bash(gh repo create:*)",
-      "Bash(git remote remove:*)",
-      "Bash(git push:*)",
-      "Bash(git add:*)",
-      "Bash(docker ps:*)",
-      "Bash(test:*)",
-      "Bash(docker-compose down:*)",
-      "Bash(nslookup:*)",
-      "Bash(cat:*)"
+      "Bash(nul)"
     ],
     "deny": [],
     "ask": []
