@@ -1,7 +1,10 @@
 {
   "permissions": {
     "allow": [
-      "Bash(nul)"
+      "Bash(nul)",
+      "Bash(ssh:*)",
+      "Bash(where:*)",
+      "Bash(python:*)"
     ],
     "deny": [],
     "ask": []

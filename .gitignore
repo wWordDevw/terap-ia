@@ -46,3 +46,14 @@ coverage/
 # Docker volumes
 postgres_data/
 backend_documents/
+
+# Scripts con credenciales del servidor (deploy/)
+# TODOS los scripts Python en deploy/ contienen credenciales
+deploy/*.py
+deploy/test-output.txt
+deploy/*.log
+
+# Excepciones: mantener solo scripts de deployment oficiales
+!deploy/deploy.sh
+!deploy/health-check.sh
+
