@@ -173,10 +173,12 @@ export class NotesService {
       }
     });
 
-    // Pre-cargar párrafos para todos los días en batch (cache compartido)
-    const paragraphsCache = new Map<string, any>();
+    // Cache de párrafos por día (no compartido entre días para permitir rotación)
+    // Cada día tiene su propio cache para evitar consultas duplicadas en la misma generación
     const dayDataResults = await Promise.all(
       weekDates.map(async (dayData) => {
+        // Crear cache por día para permitir rotación entre días
+        const paragraphsCache = new Map<string, any>();
         const dayName = dayData.dayName.toLowerCase();
         const schedules = schedulesMap.get(dayName) || [];
         
@@ -1174,14 +1176,23 @@ export class NotesService {
             let foundSubactivityName = schedule.subactivity?.subactivityName || '';
             
             if (schedule.subactivity?.id) {
-              // Buscar párrafo en cache o desde BD
-              const cacheKey = `subactivity_${schedule.subactivity.id}`;
+              // Si hay subactivity configurada, rotar entre párrafos de esa subactivity
+              // IMPORTANTE: Usar rotación por grupo+subactivity para que todos los pacientes compartan el ciclo
+              // El cache se usa solo para evitar múltiples consultas en la misma generación del mismo día
+              // pero la rotación debe avanzar entre diferentes días/generaciones
+              const cacheKey = `subactivity_${groupId}_${schedule.subactivity.id}`;
               let paragraph = paragraphsCache?.get(cacheKey);
               
+              // Solo usar cache si es la primera vez que se consulta en esta generación del mismo día
+              // Esto evita múltiples consultas para el mismo schedule en el mismo día
+              // La rotación avanza automáticamente entre días porque cada día tiene su propio cache
               if (!paragraph) {
                 paragraph = await this.rotationService.getNextParagraphForObjective(
-                  schedule.subactivity.id
+                  schedule.subactivity.id,
+                  groupId // Pasar groupId para rotación correcta por grupo+subactivity
                 );
+                // Guardar en cache solo para este día para evitar consultas duplicadas
+                // La rotación avanza porque cada día consulta independientemente
                 if (paragraph && paragraphsCache) {
                   paragraphsCache.set(cacheKey, paragraph);
                 }
@@ -1194,15 +1205,23 @@ export class NotesService {
               }
             } else if (schedule.activity?.id) {
               // Si no hay subactivity configurada, buscar párrafo de subactivity que pertenezca a la actividad
-              // IMPORTANTE: Usar el índice del schedule para rotar entre párrafos y evitar duplicados
-              const cacheKey = `activity_${schedule.activity.id}_${idx}`;
+              // IMPORTANTE: Usar rotación por grupo+actividad (compartida entre todos los pacientes)
+              // El cache se usa solo para evitar múltiples consultas en la misma generación del mismo día
+              // pero la rotación debe avanzar entre diferentes días/generaciones
+              // IMPORTANTE: No usar cache compartido entre días para que la rotación avance correctamente
+              const cacheKey = `activity_${groupId}_${schedule.activity.id}`;
               let paragraph = paragraphsCache?.get(cacheKey);
               
+              // Solo usar cache si es la primera vez que se consulta en esta generación del mismo día
+              // Esto evita múltiples consultas para el mismo schedule en el mismo día
+              // La rotación avanza automáticamente entre días porque cada día tiene su propio cache
               if (!paragraph) {
                 paragraph = await this.rotationService.getNextParagraphForActivity(
                   schedule.activity.id,
-                  idx // Pasar el índice para rotar entre párrafos
+                  groupId // Pasar groupId para rotación correcta por grupo+actividad
                 ) as any;
+                // Guardar en cache solo para este día para evitar consultas duplicadas
+                // La rotación avanza porque cada día consulta independientemente
                 if (paragraph && paragraphsCache) {
                   paragraphsCache.set(cacheKey, paragraph);
                 }

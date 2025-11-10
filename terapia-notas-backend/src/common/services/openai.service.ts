@@ -12,7 +12,8 @@ export class OpenAIService {
   constructor(private readonly configService: ConfigService) {
     this.apiKey = this.configService.get<string>('GEMINI_API_KEY') || 
                   this.configService.get<string>('OPENAI_API_KEY') || '';
-    this.model = this.configService.get<string>('GEMINI_MODEL', 'gemini-1.5-flash');
+    // Modelos disponibles: gemini-2.5-flash-lite, gemini-2.5-pro, gemini-pro, gemini-1.5-pro
+    this.model = this.configService.get<string>('GEMINI_MODEL', 'gemini-2.5-flash-lite');
     
     if (this.apiKey) {
       try {
@@ -70,9 +71,20 @@ export class OpenAIService {
       const generatedText = response.text();
       
       if (generatedText && generatedText.trim()) {
-        this.logger.log(`✅ Successfully generated client response for ${patientName} (${generatedText.length} chars)`);
-        console.log(`✅ [GEMINI] Successfully generated client response for ${patientName} (${generatedText.length} chars)`);
-        return generatedText.trim();
+        let clientResponse = generatedText.trim();
+        const currentLength = clientResponse.length;
+        
+        // Validar y ajustar longitud si es necesario (máximo 280 caracteres para respuesta completa)
+        if (currentLength > 280) {
+          this.logger.warn(`⚠️ Client response too long (${currentLength} chars), truncating to 280`);
+          console.warn(`⚠️ [GEMINI] Response too long (${currentLength} chars), truncating`);
+          // Truncar manteniendo el formato básico
+          clientResponse = clientResponse.substring(0, 277) + '...';
+        }
+        
+        this.logger.log(`✅ Successfully generated client response for ${patientName} (${clientResponse.length} chars)`);
+        console.log(`✅ [GEMINI] Successfully generated client response for ${patientName} (${clientResponse.length} chars)`);
+        return clientResponse;
       } else {
         this.logger.warn('⚠️ Gemini returned empty response, using fallback');
         console.warn('⚠️ [GEMINI] Returned empty response, using fallback');
@@ -113,23 +125,23 @@ export class OpenAIService {
       if (generatedText && generatedText.trim()) {
         let summary = generatedText.trim();
         
-        // Asegurar que el resumen tenga entre 480 y 560 caracteres
+        // Asegurar que el resumen tenga entre 450 y 520 caracteres (ajustado para caber en una página)
         const currentLength = summary.length;
-        if (currentLength >= 480 && currentLength <= 560) {
+        if (currentLength >= 450 && currentLength <= 520) {
           this.logger.log(`✅ Successfully generated progress summary for ${patientName} (${currentLength} chars)`);
           console.log(`✅ [GEMINI] Successfully generated progress summary for ${patientName} (${currentLength} chars)`);
           return summary;
         }
         
-        // Si es más largo, truncar a 560 caracteres
-        if (currentLength > 560) {
-          this.logger.warn(`⚠️ Progress summary too long (${currentLength} chars), truncating to 560`);
+        // Si es más largo, truncar a 520 caracteres
+        if (currentLength > 520) {
+          this.logger.warn(`⚠️ Progress summary too long (${currentLength} chars), truncating to 520`);
           console.warn(`⚠️ [GEMINI] Summary too long (${currentLength} chars), truncating`);
-          return summary.substring(0, 557) + '...';
+          return summary.substring(0, 517) + '...';
         }
         
         // Si es más corto, expandir ligeramente
-        if (currentLength < 480) {
+        if (currentLength < 450) {
           this.logger.warn(`⚠️ Progress summary too short (${currentLength} chars), using fallback`);
           console.warn(`⚠️ [GEMINI] Summary too short (${currentLength} chars), using fallback`);
           return this.getFallbackProgressSummary(patientName, activities);
@@ -174,7 +186,12 @@ Context: ${paragraph}`;
 The client's statement MUST be directly related to this treatment goal.`;
     }
 
-    prompt += `\n\nResponse format:
+    prompt += `\n\nSTRICT CHARACTER LIMITS (CRITICAL - must fit on one page):
+- Client statement: Maximum 80 characters (typically 40-60 characters, 1-2 short sentences)
+- Therapist intervention: Maximum 200 characters (typically 120-180 characters, 2-3 sentences)
+- Total response (statement + intervention): Maximum 280 characters
+
+Response format:
 "[Client statement]" ${therapistType} [therapist intervention].
 
 Response:`;
@@ -191,7 +208,7 @@ Response:`;
   ): string {
     const activitiesList = activities.map(a => `${a.name}: ${a.description}`).join('\n- ');
     
-    return `Write the explanatory paragraph for 'Progress was Minimal.' Include: 1) The insight or understanding the client gained during the session. 2) Ongoing barriers (e.g., avoidance, emotional suppression, difficulty applying skills). 3) The recommended therapeutic focus for next sessions. Tone: Professional, clinical, third-person, past tense, 5-7 sentences. IMPORTANT: The summary must be between 480 and 560 characters to fit on a single page.
+    return `Write the explanatory paragraph for 'Progress was Minimal.' Include: 1) The insight or understanding the client gained during the session. 2) Ongoing barriers (e.g., avoidance, emotional suppression, difficulty applying skills). 3) The recommended therapeutic focus for next sessions. Tone: Professional, clinical, third-person, past tense, 5-7 sentences. CRITICAL: The summary must be between 450 and 520 characters (strictly) to fit on a single page. Do not exceed 520 characters.
 
 Patient: ${patientName}
 Activities:
@@ -242,22 +259,22 @@ Response:`;
     const randomIndex = Math.floor(Math.random() * summaries.length);
     let summary = summaries[randomIndex];
     
-    // Asegurar que el resumen tenga entre 480 y 560 caracteres
+    // Asegurar que el resumen tenga entre 450 y 520 caracteres (ajustado para caber en una página)
     const currentLength = summary.length;
-    if (currentLength >= 480 && currentLength <= 560) {
+    if (currentLength >= 450 && currentLength <= 520) {
       return summary;
     }
     
-    // Si es más largo, truncar a 560 caracteres
-    if (currentLength > 560) {
-      return summary.substring(0, 557) + '...';
+    // Si es más largo, truncar a 520 caracteres
+    if (currentLength > 520) {
+      return summary.substring(0, 517) + '...';
     }
     
-    // Si es más corto, expandir ligeramente para llegar a al menos 480
-    if (currentLength < 480) {
+    // Si es más corto, expandir ligeramente para llegar a al menos 450
+    if (currentLength < 450) {
       const additionalText = ' Additionally, the client should continue developing skills to recognize early warning signs and implement proactive coping strategies.';
       const expanded = summary + additionalText;
-      return expanded.length <= 560 ? expanded : summary.substring(0, 557) + '...';
+      return expanded.length <= 520 ? expanded : summary.substring(0, 517) + '...';
     }
     
     return summary;
