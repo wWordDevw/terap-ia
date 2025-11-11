@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { Home, Users, UsersRound, UserCog, LogOut, Menu, X } from "lucide-react"
+import { Home, Users, UsersRound, UserCog, LogOut, Menu, X, FileText } from "lucide-react"
 import { useAuthStore } from "@/store/auth-store"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/providers/toast-provider"
@@ -20,6 +20,16 @@ const navigationItems = [
     name: "Pacientes",
     href: "/pacientes",
     icon: Users,
+  },
+  {
+    name: "Grupos",
+    href: "/grupos",
+    icon: UsersRound,
+  },
+  {
+    name: "Actividades",
+    href: "/actividades",
+    icon: FileText,
   },
   {
     name: "Usuarios",
