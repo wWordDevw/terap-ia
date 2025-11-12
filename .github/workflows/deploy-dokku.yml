@@ -1,0 +1,163 @@
+name: Deploy to Dokku
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - 'terapia-front/**'
+      - 'terapia-notas-backend/**'
+      - '.github/workflows/deploy-dokku.yml'
+  workflow_dispatch:
+
+jobs:
+  # Detectar qué cambió para hacer deploy selectivo
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: dorny/paths-filter@v2
+        id: filter
+        with:
+          filters: |
+            backend:
+              - 'terapia-notas-backend/**'
+            frontend:
+              - 'terapia-front/**'
+
+  # Deploy del Backend
+  deploy-backend:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.backend == 'true' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Necesario para git subtree
+
+      - name: Setup SSH (clave AURORA)
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DOKKU_SSH_PRIVATE_KEY }}" > ~/.ssh/dokku_aurora
+          chmod 600 ~/.ssh/dokku_aurora
+          ssh-keyscan -H ${{ secrets.DOKKU_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Configure Git
+        run: |
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "GitHub Actions"
+
+      - name: Deploy Backend to Dokku
+        run: |
+          git remote add dokku-backend dokku@${{ secrets.DOKKU_HOST }}:${{ secrets.DOKKU_BACKEND_APP }}
+
+          # Intentar push normal primero
+          GIT_SSH_COMMAND="ssh -i ~/.ssh/dokku_aurora -o IdentitiesOnly=yes -o StrictHostKeyChecking=no" \
+            git subtree push --prefix terapia-notas-backend dokku-backend main || \
+
+          # Si falla, usar force push
+          GIT_SSH_COMMAND="ssh -i ~/.ssh/dokku_aurora -o IdentitiesOnly=yes -o StrictHostKeyChecking=no" \
+            git push dokku-backend `git subtree split --prefix terapia-notas-backend main`:refs/heads/main --force
+
+      - name: Verify Backend Deployment
+        run: |
+          echo "Esperando 30 segundos para que el backend esté listo..."
+          sleep 30
+
+          # Verificar que el backend responde
+          curl -f https://api.terap-ia.victalejo.dev/api/v1/health || \
+            echo "⚠️ Advertencia: Backend no responde en el endpoint de salud"
+
+      - name: Notify Success
+        if: success()
+        run: |
+          echo "✅ Backend desplegado exitosamente"
+          echo "URL: https://api.terap-ia.victalejo.dev"
+
+      - name: Notify Failure
+        if: failure()
+        run: |
+          echo "❌ Error en el despliegue del backend"
+          echo "Revisa los logs en Dokku: dokku logs terap-ia-backend"
+
+  # Deploy del Frontend
+  deploy-frontend:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Necesario para git subtree
+
+      - name: Setup SSH (clave AURORA)
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DOKKU_SSH_PRIVATE_KEY }}" > ~/.ssh/dokku_aurora
+          chmod 600 ~/.ssh/dokku_aurora
+          ssh-keyscan -H ${{ secrets.DOKKU_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Configure Git
+        run: |
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "GitHub Actions"
+
+      - name: Deploy Frontend to Dokku
+        run: |
+          git remote add dokku-frontend dokku@${{ secrets.DOKKU_HOST }}:${{ secrets.DOKKU_FRONTEND_APP }}
+
+          # Intentar push normal primero
+          GIT_SSH_COMMAND="ssh -i ~/.ssh/dokku_aurora -o IdentitiesOnly=yes -o StrictHostKeyChecking=no" \
+            git subtree push --prefix terapia-front dokku-frontend main || \
+
+          # Si falla, usar force push
+          GIT_SSH_COMMAND="ssh -i ~/.ssh/dokku_aurora -o IdentitiesOnly=yes -o StrictHostKeyChecking=no" \
+            git push dokku-frontend `git subtree split --prefix terapia-front main`:refs/heads/main --force
+
+      - name: Verify Frontend Deployment
+        run: |
+          echo "Esperando 30 segundos para que el frontend esté listo..."
+          sleep 30
+
+          # Verificar que el frontend responde
+          curl -f -I https://terap-ia.victalejo.dev || \
+            echo "⚠️ Advertencia: Frontend no responde"
+
+      - name: Notify Success
+        if: success()
+        run: |
+          echo "✅ Frontend desplegado exitosamente"
+          echo "URL: https://terap-ia.victalejo.dev"
+
+      - name: Notify Failure
+        if: failure()
+        run: |
+          echo "❌ Error en el despliegue del frontend"
+          echo "Revisa los logs en Dokku: dokku logs terap-ia-frontend"
+
+  # Resumen del despliegue
+  deployment-summary:
+    needs: [detect-changes, deploy-backend, deploy-frontend]
+    if: always()
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deployment Summary
+        run: |
+          echo "### 🚀 Resumen del Despliegue"
+          echo ""
+          echo "Backend: ${{ needs.deploy-backend.result || 'skipped' }}"
+          echo "Frontend: ${{ needs.deploy-frontend.result || 'skipped' }}"
+          echo ""
+          echo "URLs:"
+          echo "- Frontend: https://terap-ia.victalejo.dev"
+          echo "- Backend: https://api.terap-ia.victalejo.dev"

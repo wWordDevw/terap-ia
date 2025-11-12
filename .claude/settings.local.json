@@ -4,7 +4,16 @@
       "Bash(nul)",
       "Bash(ssh:*)",
       "Bash(where:*)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(timeout:*)",
+      "Bash(sshpass -p 'Alejo2026' ssh -o StrictHostKeyChecking=no root@147.93.184.62 \"cd /var/www/terap-ia && docker ps --format ''table {{.Names}}\\t{{.Status}}\\t{{.Ports}}''\")",
+      "Bash(cat:*)",
+      "Bash(tree:*)",
+      "Bash(scp:*)",
+      "Bash(git remote add:*)",
+      "Bash(git remote set-url:*)",
+      "Bash(GIT_SSH_COMMAND=\"ssh -i ~/.ssh/aurora -o IdentitiesOnly=yes -o StrictHostKeyChecking=no\" git subtree push:*)",
+      "Bash(bash:*)"
     ],
     "deny": [],
     "ask": []

@@ -65,13 +65,22 @@ const nextConfig = {
 
   // Configuración para rewrites (si necesitas)
   async rewrites() {
+    // En desarrollo local, hacemos proxy al backend en localhost:3100
+    // En producción con Docker Compose (DOCKER_COMPOSE=true), usamos red interna
+    // En producción con Dokku (apps separadas), NO hacemos rewrite - el frontend llama directamente a la API pública
+    const useDockerCompose = process.env.DOCKER_COMPOSE === 'true';
+
+    if (process.env.NODE_ENV === 'production' && !useDockerCompose) {
+      // Dokku con apps separadas - sin rewrite, el frontend usa NEXT_PUBLIC_API_URL directamente
+      return [];
+    }
+
     return [
-      // Proxy al backend - permite que el navegador llame a /api/v1/*
-      // y Next.js lo redirige al backend usando la red interna de Docker
+      // Proxy al backend
       {
         source: '/api/v1/:path*',
-        destination: process.env.NODE_ENV === 'production'
-          ? 'http://backend:3000/api/v1/:path*'  // Red interna Docker en producción
+        destination: useDockerCompose
+          ? 'http://backend:3000/api/v1/:path*'  // Red interna Docker Compose
           : 'http://localhost:3100/api/v1/:path*', // localhost en desarrollo
       },
     ];
