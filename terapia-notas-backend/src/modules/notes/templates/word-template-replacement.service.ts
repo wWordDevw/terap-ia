@@ -409,10 +409,10 @@ export class WordTemplateReplacementService {
         hour_fourth_activity: data.activities?.[3] ? this.formatTimeRange(data.activities[3]) : '',
         
         // Unidades por sesión
-        session_1_units: data.activities?.[0] ? `Session 1: ${data.activities[0].units || 1} Units` : '',
-        session_2_units: data.activities?.[1] ? `Session 2: ${data.activities[1].units || 1} Units` : '',
-        session_3_units: data.activities?.[2] ? `Session 3: ${data.activities[2].units || 1} Units` : '',
-        session_4_units: data.activities?.[3] ? `Session 4: ${data.activities[3].units || 1} Units` : '',
+        session_1_units: data.activities?.[0] ? `Session 1: ${this.formatUnits(data.activities[0].units)} Units` : '',
+        session_2_units: data.activities?.[1] ? `Session 2: ${this.formatUnits(data.activities[1].units)} Units` : '',
+        session_3_units: data.activities?.[2] ? `Session 3: ${this.formatUnits(data.activities[2].units)} Units` : '',
+        session_4_units: data.activities?.[3] ? `Session 4: ${this.formatUnits(data.activities[3].units)} Units` : '',
         
         // Terapeuta (datos generales)
         // Función que retorna la imagen de firma para docx-templates (async)
@@ -983,6 +983,22 @@ export class WordTemplateReplacementService {
   /**
    * Calcula el total de unidades basado en actividades con datos
    */
+  /**
+   * Formatea unidades para mostrar sin decimales innecesarios
+   * Ej: 1.00 -> "1", 1.5 -> "1.5", 2 -> "2"
+   */
+  private formatUnits(units: number | string | undefined): string {
+    if (units === undefined || units === null) return '1';
+    const numUnits = typeof units === 'string' ? parseFloat(units) : units;
+    // Si es un número entero, retornar sin decimales
+    if (Number.isInteger(numUnits)) {
+      return Math.round(numUnits).toString();
+    }
+    // Si tiene decimales, mostrar solo los necesarios (sin .00)
+    const formatted = numUnits.toString();
+    return formatted.endsWith('.00') ? formatted.slice(0, -3) : formatted;
+  }
+
   private calculateTotalUnits(activities: any[]): number {
     if (!activities || activities.length === 0) return 0;
     return activities.filter(act => act.name && act.description).length;
@@ -1053,22 +1069,9 @@ export class WordTemplateReplacementService {
    * Soporta tanto PHP como IOP según el programType del grupo
    */
   async generateSinglePatientDocument(patient: any, data: any, overrideCode?: string): Promise<Buffer> {
-    // LOG CRÍTICO: Confirmar que esta función se está ejecutando - USAR console.log PARA FORZAR VISIBILIDAD
-    console.error(`🚨🚨🚨 EJECUTANDO generateSinglePatientDocument para: ${patient.name || patient.firstName || 'paciente desconocido'}`);
-    this.logger.error(`🚨 EJECUTANDO generateSinglePatientDocument para: ${patient.name || patient.firstName || 'paciente desconocido'}`);
-    
     // Detectar tipo de programa (PHP o IOP)
     const programType = data.group?.programType || 'PHP';
     const isIOP = programType === 'IOP';
-    
-    // DEBUG: Verificar detección de tipo de programa
-    // Cambiar a ERROR y console.error para que siempre se muestre (forzar visibilidad)
-    console.error(`🔍🔍🔍 Detección de programa: programType=${programType}, isIOP=${isIOP}, patient=${patient.name}`);
-    this.logger.error(`🔍 Detección de programa en generateSinglePatientDocument:`);
-    this.logger.error(`   - data.group?.programType: ${data.group?.programType}`);
-    this.logger.error(`   - programType: ${programType}`);
-    this.logger.error(`   - isIOP: ${isIOP}`);
-    this.logger.error(`   - patient: ${patient.name || patient.firstName || 'N/A'}`);
     
     // Seleccionar template según el tipo de programa
     const templatePath = isIOP ? this.getIOPTemplatePath() : this.getSimpleTemplatePath();
@@ -1287,8 +1290,6 @@ export class WordTemplateReplacementService {
     const selectedGoalNumber = this.getSelectedGoalNumber(data.date);
     const selectedGoalText = getGoalDescription(selectedGoalNumber - 1) || '';
     
-    // Log de depuración para verificar el goal seleccionado
-    console.error(`🚨🚨🚨 DEBUG GOAL SELECTION: date=${data.date}, selectedGoalNumber=${selectedGoalNumber}, selectedGoalText=${selectedGoalText.substring(0, 50)}...`);
     
     // Determinar el prefijo del terapeuta según el tipo de programa
     const therapistPrefix = isIOP ? 'IOP Therapist' : 'PHP Therapist';
@@ -1307,17 +1308,21 @@ export class WordTemplateReplacementService {
     const patientIndex = data.patients?.indexOf(patient) || 0;
     const patientName = patient.name || `${patient.firstName || ''} ${patient.lastName || ''}`.trim() || 'Patient';
     
-    // Determinar qué grupo corresponde al goal marcado (el grupo que mostrará el response relacionado)
-    // Group 1 para Goal#1, Group 2 para Goal#2, Group 3 para Goal#3, Group 4 para Goal#4
-    const goalGroupIndex = selectedGoalNumber - 1; // Convertir a índice 0-based
+    // Obtener todos los goals del paciente para cada grupo
+    // TODOS los grupos deben generar statements basados en sus goals correspondientes
+    // Group 1 → Goal#1, Group 2 → Goal#2, Group 3 → Goal#3, Group 4 → Goal#4
+    const goal1Text = getGoalDescription(0) || ''; // Goal#1 para Group 1
+    const goal2Text = getGoalDescription(1) || ''; // Goal#2 para Group 2
+    const goal3Text = getGoalDescription(2) || ''; // Goal#3 para Group 3
+    const goal4Text = getGoalDescription(3) || ''; // Goal#4 para Group 4
     
     // Generar respuestas de cliente con IA (en paralelo para mejor rendimiento)
-    // Solo pasar el goal al grupo correspondiente
+    // TODOS los grupos reciben su goal correspondiente para generar statements basados en goals
     const [clientResponse1, clientResponse2, clientResponse3, clientResponse4, progressSummary] = await Promise.all([
-      this.generateClientResponseWithAI(patientName, 0, data.activities || [], isIOP, goalGroupIndex === 0 ? selectedGoalNumber : undefined, goalGroupIndex === 0 ? selectedGoalText : undefined).catch(() => this.getClientResponse(1, patientIndex)),
-      this.generateClientResponseWithAI(patientName, 1, data.activities || [], isIOP, goalGroupIndex === 1 ? selectedGoalNumber : undefined, goalGroupIndex === 1 ? selectedGoalText : undefined).catch(() => this.getClientResponse(2, patientIndex)),
-      this.generateClientResponseWithAI(patientName, 2, data.activities || [], isIOP, goalGroupIndex === 2 ? selectedGoalNumber : undefined, goalGroupIndex === 2 ? selectedGoalText : undefined).catch(() => this.getClientResponse(3, patientIndex)),
-      this.generateClientResponseWithAI(patientName, 3, data.activities || [], isIOP, goalGroupIndex === 3 ? selectedGoalNumber : undefined, goalGroupIndex === 3 ? selectedGoalText : undefined).catch(() => this.getClientResponse(4, patientIndex)),
+      this.generateClientResponseWithAI(patientName, 0, data.activities || [], isIOP, 1, goal1Text).catch(() => this.getClientResponse(1, patientIndex)),
+      this.generateClientResponseWithAI(patientName, 1, data.activities || [], isIOP, 2, goal2Text).catch(() => this.getClientResponse(2, patientIndex)),
+      this.generateClientResponseWithAI(patientName, 2, data.activities || [], isIOP, 3, goal3Text).catch(() => this.getClientResponse(3, patientIndex)),
+      this.generateClientResponseWithAI(patientName, 3, data.activities || [], isIOP, 4, goal4Text).catch(() => this.getClientResponse(4, patientIndex)),
       this.generateProgressSummaryWithAI(patientName, data.activities || []).catch(() => this.getProgressExplanation(patientName, data.activities || [])),
     ]);
     
@@ -1785,7 +1790,6 @@ export class WordTemplateReplacementService {
         indexedDiagnosticVars[descKey] = String(descValue || (i === 1 ? diagnosticDescriptionForAbsence : ''));
       }
       
-      console.error(`🚨🚨🚨 generateSingleAbsenceDocument IOP: diagnostic_code1=${indexedDiagnosticVars.diagnostic_code1}, diagnostic_code2=${indexedDiagnosticVars.diagnostic_code2}`);
     }
     
     const absenceData = {
@@ -1885,10 +1889,10 @@ export class WordTemplateReplacementService {
         hour_third_activity: data.activities?.[2] ? this.formatTimeRange(data.activities[2]) : '',
         hour_fourth_activity: data.activities?.[3] ? this.formatTimeRange(data.activities[3]) : '',
         
-        session_1_units: data.activities?.[0] ? `Session 1: ${data.activities[0].units || 1} Units` : '',
-        session_2_units: data.activities?.[1] ? `Session 2: ${data.activities[1].units || 1} Units` : '',
-        session_3_units: data.activities?.[2] ? `Session 3: ${data.activities[2].units || 1} Units` : '',
-        session_4_units: data.activities?.[3] ? `Session 4: ${data.activities[3].units || 1} Units` : '',
+        session_1_units: data.activities?.[0] ? `Session 1: ${this.formatUnits(data.activities[0].units)} Units` : '',
+        session_2_units: data.activities?.[1] ? `Session 2: ${this.formatUnits(data.activities[1].units)} Units` : '',
+        session_3_units: data.activities?.[2] ? `Session 3: ${this.formatUnits(data.activities[2].units)} Units` : '',
+        session_4_units: data.activities?.[3] ? `Session 4: ${this.formatUnits(data.activities[3].units)} Units` : '',
         
         // Función que retorna la imagen de firma para docx-templates (async)
         terapeut_signature_image: async () => await this.getTherapistSignatureImage(
@@ -1959,15 +1963,21 @@ export class WordTemplateReplacementService {
         
         // Determinar qué grupo corresponde al goal marcado (el grupo que mostrará el response relacionado)
         // Group 1 para Goal#1, Group 2 para Goal#2, Group 3 para Goal#3, Group 4 para Goal#4
-        const goalGroupIndex = selectedGoalNumber - 1; // Convertir a índice 0-based
+        // Obtener todos los goals del paciente para cada grupo
+        // TODOS los grupos deben generar statements basados en sus goals correspondientes
+        // Group 1 → Goal#1, Group 2 → Goal#2, Group 3 → Goal#3, Group 4 → Goal#4
+        const goal1Text = getGoalDescription(0) || ''; // Goal#1 para Group 1
+        const goal2Text = getGoalDescription(1) || ''; // Goal#2 para Group 2
+        const goal3Text = getGoalDescription(2) || ''; // Goal#3 para Group 3
+        const goal4Text = getGoalDescription(3) || ''; // Goal#4 para Group 4
         
         // Generar respuestas de cliente con IA (en paralelo para mejor rendimiento)
-        // Solo pasar el goal al grupo correspondiente
+        // TODOS los grupos reciben su goal correspondiente para generar statements basados en goals
         const [clientResponse1, clientResponse2, clientResponse3, clientResponse4, progressSummary] = await Promise.all([
-          this.generateClientResponseWithAI(patientName, 0, data.activities || [], isIOP, goalGroupIndex === 0 ? selectedGoalNumber : undefined, goalGroupIndex === 0 ? selectedGoalText : undefined).catch(() => this.getClientResponse(1, patientIndex)),
-          this.generateClientResponseWithAI(patientName, 1, data.activities || [], isIOP, goalGroupIndex === 1 ? selectedGoalNumber : undefined, goalGroupIndex === 1 ? selectedGoalText : undefined).catch(() => this.getClientResponse(2, patientIndex)),
-          this.generateClientResponseWithAI(patientName, 2, data.activities || [], isIOP, goalGroupIndex === 2 ? selectedGoalNumber : undefined, goalGroupIndex === 2 ? selectedGoalText : undefined).catch(() => this.getClientResponse(3, patientIndex)),
-          this.generateClientResponseWithAI(patientName, 3, data.activities || [], isIOP, goalGroupIndex === 3 ? selectedGoalNumber : undefined, goalGroupIndex === 3 ? selectedGoalText : undefined).catch(() => this.getClientResponse(4, patientIndex)),
+          this.generateClientResponseWithAI(patientName, 0, data.activities || [], isIOP, 1, goal1Text).catch(() => this.getClientResponse(1, patientIndex)),
+          this.generateClientResponseWithAI(patientName, 1, data.activities || [], isIOP, 2, goal2Text).catch(() => this.getClientResponse(2, patientIndex)),
+          this.generateClientResponseWithAI(patientName, 2, data.activities || [], isIOP, 3, goal3Text).catch(() => this.getClientResponse(3, patientIndex)),
+          this.generateClientResponseWithAI(patientName, 3, data.activities || [], isIOP, 4, goal4Text).catch(() => this.getClientResponse(4, patientIndex)),
           this.generateProgressSummaryWithAI(patientName, data.activities || []).catch(() => this.getProgressExplanation(patientName, data.activities || [])),
         ]);
         
@@ -2271,15 +2281,21 @@ export class WordTemplateReplacementService {
       
       // Determinar qué grupo corresponde al goal marcado (el grupo que mostrará el response relacionado)
       // Group 1 para Goal#1, Group 2 para Goal#2, Group 3 para Goal#3, Group 4 para Goal#4
-      const goalGroupIndex = selectedGoalNumber - 1; // Convertir a índice 0-based
+      // Obtener todos los goals del paciente para cada grupo
+      // TODOS los grupos deben generar statements basados en sus goals correspondientes
+      // Group 1 → Goal#1, Group 2 → Goal#2, Group 3 → Goal#3, Group 4 → Goal#4
+      const goal1Text = getGoalDescription(0) || ''; // Goal#1 para Group 1
+      const goal2Text = getGoalDescription(1) || ''; // Goal#2 para Group 2
+      const goal3Text = getGoalDescription(2) || ''; // Goal#3 para Group 3
+      const goal4Text = getGoalDescription(3) || ''; // Goal#4 para Group 4
       
       // Generar respuestas de cliente con IA (en paralelo para mejor rendimiento)
-      // Solo pasar el goal al grupo correspondiente
+      // TODOS los grupos reciben su goal correspondiente para generar statements basados en goals
       const [clientResponse1, clientResponse2, clientResponse3, clientResponse4, progressSummary] = await Promise.all([
-        this.generateClientResponseWithAI(patientName, 0, data.activities || [], isIOP, goalGroupIndex === 0 ? selectedGoalNumber : undefined, goalGroupIndex === 0 ? selectedGoalText : undefined).catch(() => this.getClientResponse(1, 0)),
-        this.generateClientResponseWithAI(patientName, 1, data.activities || [], isIOP, goalGroupIndex === 1 ? selectedGoalNumber : undefined, goalGroupIndex === 1 ? selectedGoalText : undefined).catch(() => this.getClientResponse(2, 0)),
-        this.generateClientResponseWithAI(patientName, 2, data.activities || [], isIOP, goalGroupIndex === 2 ? selectedGoalNumber : undefined, goalGroupIndex === 2 ? selectedGoalText : undefined).catch(() => this.getClientResponse(3, 0)),
-        this.generateClientResponseWithAI(patientName, 3, data.activities || [], isIOP, goalGroupIndex === 3 ? selectedGoalNumber : undefined, goalGroupIndex === 3 ? selectedGoalText : undefined).catch(() => this.getClientResponse(4, 0)),
+        this.generateClientResponseWithAI(patientName, 0, data.activities || [], isIOP, 1, goal1Text).catch(() => this.getClientResponse(1, 0)),
+        this.generateClientResponseWithAI(patientName, 1, data.activities || [], isIOP, 2, goal2Text).catch(() => this.getClientResponse(2, 0)),
+        this.generateClientResponseWithAI(patientName, 2, data.activities || [], isIOP, 3, goal3Text).catch(() => this.getClientResponse(3, 0)),
+        this.generateClientResponseWithAI(patientName, 3, data.activities || [], isIOP, 4, goal4Text).catch(() => this.getClientResponse(4, 0)),
         this.generateProgressSummaryWithAI(patientName, data.activities || []).catch(() => this.getProgressExplanation(patientName, data.activities || [])),
       ]);
       
@@ -2330,10 +2346,10 @@ export class WordTemplateReplacementService {
         hour_third_activity: data.activities?.[2] ? this.formatTimeRange(data.activities[2]) : '',
         hour_fourth_activity: data.activities?.[3] ? this.formatTimeRange(data.activities[3]) : '',
         
-        session_1_units: data.activities?.[0] ? `Session 1: ${data.activities[0].units || 1} Units` : '',
-        session_2_units: data.activities?.[1] ? `Session 2: ${data.activities[1].units || 1} Units` : '',
-        session_3_units: data.activities?.[2] ? `Session 3: ${data.activities[2].units || 1} Units` : '',
-        session_4_units: data.activities?.[3] ? `Session 4: ${data.activities[3].units || 1} Units` : '',
+        session_1_units: data.activities?.[0] ? `Session 1: ${this.formatUnits(data.activities[0].units)} Units` : '',
+        session_2_units: data.activities?.[1] ? `Session 2: ${this.formatUnits(data.activities[1].units)} Units` : '',
+        session_3_units: data.activities?.[2] ? `Session 3: ${this.formatUnits(data.activities[2].units)} Units` : '',
+        session_4_units: data.activities?.[3] ? `Session 4: ${this.formatUnits(data.activities[3].units)} Units` : '',
         
         // Datos del primer paciente (para template simple)
         patient_name: (firstPatient.name || 'Patient Name').toUpperCase(),
@@ -2579,10 +2595,10 @@ export class WordTemplateReplacementService {
         hour_third_activity: data.activities?.[2] ? this.formatTimeRange(data.activities[2]) : '',
         hour_fourth_activity: data.activities?.[3] ? this.formatTimeRange(data.activities[3]) : '',
         
-        session_1_units: data.activities?.[0] ? `Session 1: ${data.activities[0].units || 1} Units` : '',
-        session_2_units: data.activities?.[1] ? `Session 2: ${data.activities[1].units || 1} Units` : '',
-        session_3_units: data.activities?.[2] ? `Session 3: ${data.activities[2].units || 1} Units` : '',
-        session_4_units: data.activities?.[3] ? `Session 4: ${data.activities[3].units || 1} Units` : '',
+        session_1_units: data.activities?.[0] ? `Session 1: ${this.formatUnits(data.activities[0].units)} Units` : '',
+        session_2_units: data.activities?.[1] ? `Session 2: ${this.formatUnits(data.activities[1].units)} Units` : '',
+        session_3_units: data.activities?.[2] ? `Session 3: ${this.formatUnits(data.activities[2].units)} Units` : '',
+        session_4_units: data.activities?.[3] ? `Session 4: ${this.formatUnits(data.activities[3].units)} Units` : '',
         
         // Información del paciente
         patient_name: (patient.name || 'Patient Name').toUpperCase(),

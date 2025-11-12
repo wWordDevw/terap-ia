@@ -42,7 +42,7 @@ services:
       JWT_SECRET: your-secret-key-change-this-in-production
       JWT_EXPIRES_IN: 24h
       GEMINI_API_KEY: ${GEMINI_API_KEY:-your-gemini-api-key-here}
-      GEMINI_MODEL: gemini-1.5-flash
+      GEMINI_MODEL: gemini-2.5-flash-lite
       # Mantener OPENAI_API_KEY para compatibilidad hacia atrás
       OPENAI_API_KEY: ${GEMINI_API_KEY:-your-gemini-api-key-here}
       PHP_SIMPLE_TEMPLATE_PATH: PHP_CLEAN_TEMPLATE_SIMPLE.docx
