@@ -103,7 +103,7 @@ function LoginContent() {
               </svg>
             </div>
             <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-gray-100 mb-2">
-              Sistema de Gestion Terapeutica
+              Sistema de Petro
             </h1>
             <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">Inicia sesion en tu cuenta</p>
           </div>

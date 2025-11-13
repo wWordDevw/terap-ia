@@ -13,7 +13,11 @@
       "Bash(git remote add:*)",
       "Bash(git remote set-url:*)",
       "Bash(GIT_SSH_COMMAND=\"ssh -i ~/.ssh/aurora -o IdentitiesOnly=yes -o StrictHostKeyChecking=no\" git subtree push:*)",
-      "Bash(bash:*)"
+      "Bash(bash:*)",
+      "Bash(sshpass -p 'Alejo2026' ssh -o StrictHostKeyChecking=no root@147.93.184.62 \"dokku ps:report terap-ia-frontend\")",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(GIT_SSH_COMMAND=\"ssh -i ~/.ssh/aurora -o IdentitiesOnly=yes -o StrictHostKeyChecking=no\" git remote add:*)"
     ],
     "deny": [],
     "ask": []
