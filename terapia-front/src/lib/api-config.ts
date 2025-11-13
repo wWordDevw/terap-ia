@@ -4,21 +4,12 @@
 
 // Detectar automáticamente el entorno
 const getApiBaseUrl = () => {
-  // Si hay variable de entorno definida, usarla
+  // SIEMPRE usar variable de entorno si está definida (tiene prioridad)
   if (process.env.NEXT_PUBLIC_API_URL) {
     return process.env.NEXT_PUBLIC_API_URL;
   }
 
-  // En el cliente (navegador), detectar automáticamente
-  if (typeof window !== 'undefined') {
-    // Si estamos en producción (no localhost), usar ruta relativa
-    if (!window.location.hostname.includes('localhost') &&
-        !window.location.hostname.includes('127.0.0.1')) {
-      return '/api/v1';
-    }
-  }
-
-  // Fallback para desarrollo
+  // Fallback para desarrollo local (solo si no hay variable de entorno)
   return 'http://localhost:3100/api/v1';
 };
 
