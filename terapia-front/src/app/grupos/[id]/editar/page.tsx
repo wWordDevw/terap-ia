@@ -9,12 +9,28 @@ import { getGrupoById } from '@/data/mock-grupos';
 import { TIPOS_PROGRAMA } from '@/lib/constants';
 import type { Grupo } from '@/lib/types';
 import { useToast } from '@/components/providers/toast-provider';
+import { useAuthStore } from '@/store/auth-store';
+import { motion } from 'framer-motion';
+import { Info, Users, FileText, Calendar } from 'lucide-react';
+import Badge from '@/components/ui/bagde';
+import UsuarioSelector from '@/components/grupos/usuario-selector';
+import TerapeutaSelector from '@/components/grupos/terapeuta-selector';
+import { groupsService, ProgramType, Shift, DayOfWeek, type UpdateGroupDto, type CreateGroupScheduleDto } from '@/lib/services/groups-service';
+import { clinicsService, type Clinic } from '@/lib/services/clinics-service';
+import { activitiesService, type Activity } from '@/lib/services/activities-service';
+import { usersService } from '@/lib/services/users-service';
+import ActivitySearch from '@/components/ui/activity-search';
+import type { Usuario, UserRole } from '@/lib/types';
 
 export default function EditarGrupoPage() {
   const params = useParams();
   const router = useRouter();
   const { addToast } = useToast();
+  const { user } = useAuthStore();
   const grupoId = params.id as string;
+  
+  // Determinar si el usuario es admin
+  const isAdmin = user?.role === 'admin';
   
   const [grupo, setGrupo] = useState<Grupo | null>(null);
   const [formData, setFormData] = useState({
