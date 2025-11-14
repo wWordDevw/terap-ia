@@ -87,6 +87,9 @@ export interface CreateGroupDto {
   startDate: string | Date;
   endDate?: string | Date;
   clinicId: string;
+  terapeutaId?: string;
+  pacientesIds?: string[];
+  schedules?: CreateGroupScheduleDto[];
 }
 
 export interface UpdateGroupDto {

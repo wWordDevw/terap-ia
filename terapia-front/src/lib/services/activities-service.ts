@@ -83,6 +83,26 @@ class ActivitiesService {
   }
 
   /**
+   * GET /activities/basic
+   * Obtener todas las actividades básicas (sin subactividades ni párrafos)
+   * @param activityType - Filtrar por tipo: 'PHP' o 'IOP'
+   * @param includeInactive - Incluir actividades inactivas
+   */
+  async getBasic(activityType?: 'PHP' | 'IOP', includeInactive = false): Promise<Activity[]> {
+    const params = new URLSearchParams();
+    if (includeInactive) {
+      params.append('includeInactive', 'true');
+    }
+    if (activityType) {
+      params.append('activityType', activityType);
+    }
+    const url = params.toString()
+      ? `${this.BASE_URL}/basic?${params.toString()}`
+      : `${this.BASE_URL}/basic`;
+    return apiClient.get<Activity[]>(url, true);
+  }
+
+  /**
    * GET /activities/:id
    * Obtener una actividad por ID
    */
