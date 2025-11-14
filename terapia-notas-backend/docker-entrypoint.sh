@@ -46,13 +46,17 @@ echo "🔄 Ejecutando migraciones..."
 # 1. Schema principal
 run_sql "database/schema.sql" "Schema principal (tablas)"
 
-# 2. Vistas
-run_sql "database/09-views.sql" "Vistas"
+# 2. Migraciones específicas críticas (en orden)
+run_sql "database/add-activity-type-column.sql" "Columna activity_type"
+run_sql "database/add-signature-image-to-users.sql" "Columna signature_image"
 
 # 3. Triggers y funciones
 run_sql "database/08-triggers.sql" "Triggers y funciones"
 
-# 4. Otros archivos de migración (si existen)
+# 4. Vistas (después de triggers)
+run_sql "database/09-views.sql" "Vistas"
+
+# 5. Otros archivos de migración numerados (si existen)
 for migration_file in database/[0-9][0-9]-*.sql; do
   if [ -f "$migration_file" ] && [ "$migration_file" != "database/08-triggers.sql" ] && [ "$migration_file" != "database/09-views.sql" ]; then
     filename=$(basename "$migration_file")
