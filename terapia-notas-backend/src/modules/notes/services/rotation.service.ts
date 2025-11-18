@@ -59,10 +59,29 @@ export class RotationService {
   }
 
   /**
-   * Obtiene el siguiente párrafo para un objetivo (subactivity)
-   * Rotación por grupo+subactivity: rota entre párrafos ordenados por paragraphOrder
+   * Obtiene el siguiente párrafo para un objetivo (subactivity) usando rotación por grupo.
+   *
+   * **LÓGICA DE ROTACIÓN:**
+   * - Los párrafos se ordenan por `paragraphOrder` (ASC), luego por `id` (ASC)
+   * - Consulta el último párrafo usado para este grupo+subactivity
+   * - Retorna el siguiente párrafo en el orden
+   * - Cuando se completan todos los párrafos, reinicia automáticamente al primero
+   *
+   * **IMPORTANTE:** La rotación es por GRUPO, no por paciente individual.
+   * Todos los pacientes del mismo grupo usan el mismo párrafo el mismo día.
+   *
    * @param subactivityId - ID de la subactivity (objetivo)
-   * @param groupId - ID del grupo (opcional, para rotación por grupo)
+   * @param groupId - ID del grupo (REQUERIDO para rotación correcta)
+   *
+   * @returns El siguiente párrafo a usar, o null si no hay párrafos disponibles
+   *
+   * @example
+   * // Ejemplo de rotación con 3 párrafos:
+   * // Día 1: Retorna Párrafo 1 (order: 1)
+   * // Día 2: Retorna Párrafo 2 (order: 2)
+   * // Día 3: Retorna Párrafo 3 (order: 3)
+   * // Día 4: Retorna Párrafo 1 (order: 1) <- Reinicia ciclo
+   * const paragraph = await rotationService.getNextParagraphForObjective('subactivity-123', 'group-456');
    */
   async getNextParagraphForObjective(
     subactivityId: string,
@@ -158,11 +177,35 @@ export class RotationService {
   }
 
   /**
-   * Obtiene el siguiente objetivo (subactivity) y párrafo para una actividad
-   * Rotación por grupo+actividad: primero rota entre objetivos (alfabético), luego entre párrafos
-   * @param groupId - ID del grupo
+   * Obtiene el siguiente objetivo (subactivity) y párrafo para una actividad usando ROTACIÓN DOBLE.
+   *
+   * **LÓGICA DE ROTACIÓN DOBLE:**
+   * 1. Primero rota entre subactivities (ordenadas alfabéticamente por `subactivityName`)
+   * 2. Dentro de cada subactivity, rota entre párrafos (ordenados por `paragraphOrder`)
+   * 3. Cuando se completan todos los párrafos de una subactivity, avanza a la siguiente
+   * 4. Cuando se completan todas las subactivities, reinicia al principio
+   *
+   * **IMPORTANTE:** La rotación es por GRUPO, no por paciente individual.
+   *
+   * @param groupId - ID del grupo (REQUERIDO para tracking de rotación)
    * @param activityId - ID de la actividad
-   * @returns Párrafo con su subactivity incluida
+   *
+   * @returns Párrafo con su subactivity incluida, o null si no hay disponibles
+   *
+   * @example
+   * // Ejemplo con 2 subactivities, cada una con 2 párrafos:
+   * // Subactivity A: [Párrafo A1, Párrafo A2]
+   * // Subactivity B: [Párrafo B1, Párrafo B2]
+   * //
+   * // Día 1: Retorna { paragraph: A1, subactivity: A }
+   * // Día 2: Retorna { paragraph: A2, subactivity: A } <- Continúa en mismo objetivo
+   * // Día 3: Retorna { paragraph: B1, subactivity: B } <- Avanza a siguiente objetivo
+   * // Día 4: Retorna { paragraph: B2, subactivity: B }
+   * // Día 5: Retorna { paragraph: A1, subactivity: A } <- Reinicia ciclo completo
+   *
+   * const result = await rotationService.getNextSubactivityAndParagraphForActivity('group-123', 'activity-456');
+   * console.log(result.subactivity.subactivityName); // "Communication Skills"
+   * console.log(result.paragraphText); // "The client participated..."
    */
   async getNextSubactivityAndParagraphForActivity(
     groupId: string,
@@ -399,8 +442,41 @@ export class RotationService {
   }
 
   /**
-   * Registra el uso de un objetivo y párrafo
-   * IMPORTANTE: Debe incluir groupId y activityId para tracking correcto de rotación
+   * Registra el uso de un objetivo y párrafo, crítico para el sistema de rotación.
+   *
+   * **FUNCIONALIDAD:**
+   * 1. Crea hash MD5 de la respuesta generada para evitar duplicados
+   * 2. Registra uso en `paragraph_usage_history` con todos los campos de tracking
+   * 3. Incrementa el contador `usageCount` del párrafo
+   * 4. Guarda en `generated_responses_history` para prevenir respuestas repetidas
+   *
+   * **IMPORTANTE:**
+   * - `groupId` es CRÍTICO para el sistema de rotación por grupo
+   * - `activityId` es CRÍTICO para rotación doble (actividad sin subactivity configurada)
+   * - Sin estos campos, la rotación NO funcionará correctamente
+   *
+   * @param patientId - ID del paciente
+   * @param goalId - ID del goal (objetivo del paciente)
+   * @param paragraphId - ID del párrafo usado
+   * @param subactivityId - ID de la subactivity
+   * @param responseText - Texto de la respuesta generada (para hash de duplicados)
+   * @param groupId - **CRÍTICO:** ID del grupo para tracking de rotación
+   * @param activityId - **CRÍTICO:** ID de la actividad para rotación doble
+   * @param weekId - ID de la semana (opcional)
+   *
+   * @returns Promise<void>
+   *
+   * @example
+   * await rotationService.registerUsage(
+   *   'patient-123',
+   *   'goal-456',
+   *   'paragraph-789',
+   *   'subactivity-012',
+   *   '"Client statement". PHP Therapist intervention.',
+   *   'group-345',      // CRÍTICO para rotación
+   *   'activity-678',   // CRÍTICO para rotación
+   *   'week-901'
+   * );
    */
   async registerUsage(
     patientId: string,

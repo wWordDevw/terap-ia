@@ -209,19 +209,52 @@
  * - formatDate(): Formatea fecha DD/MM/YYYY
  * - formatTimeRange(): Formatea rango de horas (ej: "1:00 PM to 2:00 PM")
  * 
- * 
+ *
+ * ⚠️ REGLAS CRÍTICAS DE MÉTRICAS (BUSINESS RULES):
+ * ============================================================================
+ *
+ * Las métricas tienen reglas estrictas de negocio que NO PUEDEN violarse:
+ *
+ * 1. COOPERATION, MOTIVATION, CONCENTRATION & FOCUS, PEER INTERACTION:
+ *    - SOLO pueden tener valores: "Minor" o "Moderate" (50% cada uno, aleatorio)
+ *    - NUNCA pueden ser: "Poor", "Poor / Negative", "Fluctuations", o cualquier otro
+ *    - Checkboxes *_poor: SIEMPRE desmarcados (☐)
+ *    - Checkboxes *_moderate o *_minor: Solo UNO marcado (☒), según el valor
+ *
+ * 2. ATTITUDE (REGLA MÁS CRÍTICA):
+ *    - SIEMPRE debe ser: "Fluctuations" (valor hardcoded, NO aleatorio)
+ *    - NUNCA puede ser: "Positive", "Negative", "Moderate", "Minor", "Poor"
+ *    - Checkboxes:
+ *      - attitude_positive: SIEMPRE desmarcado (☐)
+ *      - attitude_negative: SIEMPRE desmarcado (☐)
+ *      - attitude_fluctuations: SIEMPRE marcado (☒)
+ *
+ * 3. VALIDACIÓN:
+ *    - Exactamente UN checkbox debe estar marcado por métrica (excepto attitude: solo fluctuations)
+ *    - Las métricas se generan con getRandomMetric() que retorna 'Moderate' | 'Minor'
+ *    - NUNCA modificar manualmente estos valores sin consultar las reglas documentadas
+ *
+ * CONSECUENCIAS DE VIOLAR ESTAS REGLAS:
+ * - Notas clínicas inválidas
+ * - Rechazo por parte de auditores médicos
+ * - Problemas de cumplimiento regulatorio
+ *
+ * ============================================================================
+ *
+ *
  * 📂 ARCHIVOS RELACIONADOS:
  * ============================================================================
- * 
+ *
  * - src/modules/notes/notes.service.ts: Orquesta la generación de notas
  * - src/modules/notes/notes.controller.ts: Endpoints API
  * - src/modules/notes/services/rotation.service.ts: Obtiene párrafos rotativos
  * - src/modules/notes/templates/word-template-replacement.service.ts: Este archivo
- * 
+ * - src/modules/notes/templates/word-template-replacement.service.spec.ts: Tests de métricas
+ *
  * Template Word usado:
  * - PHP_CLEAN_TEMPLATE_SIMPLE.docx (template sin bucles, variables individuales)
  * - PHP_CLEAN_TEMPLATE_SIMPLE AUSENCIA.docx (template para notas de ausencia)
- * 
+ *
  * ============================================================================
  */
 
